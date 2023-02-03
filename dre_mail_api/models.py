@@ -1,22 +1,24 @@
 from django.db import models
 from django.utils.timezone import now
+from django.contrib.auth.models import User
 
 # Create your models here.
 class EmailUser(models.Model):
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
   
     # Create the attributes for the user
-    firstName = models.CharField(max_length=20, blank=False, null=False)
-    lastName = models.CharField(max_length=20, blank=False, null=False)
-    email = models.CharField(max_length=50, blank=False, null=False)
-    password = models.CharField(max_length=100, default="", blank=False, null=False)
     avi = models.ImageField(upload_to="userImages/", null=True)
+
+    def __str__(self):
+        return str(self.user)
 
 
 class EmailGroup(models.Model):
   
     # Create the attributes for the email group
     name = models.CharField(max_length=20, blank=False, null=False)
-    description = models.CharField(max_length=150, null=False)
+    description = models.TextField(null=False)
 
 class UserEmailGroup(models.Model):
   
@@ -55,4 +57,4 @@ class Spam(models.Model):
 
 class Drafts(models.Model):
     drafter = models.ForeignKey(to=EmailUser, on_delete=models.CASCADE)
-    emailTransfer = models.ForeignKey(to=EmailTransfer, on_delete=models.CASCADE)
+    email = models.ForeignKey(to=Email, on_delete=models.CASCADE)
