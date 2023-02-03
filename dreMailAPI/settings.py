@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'dre_mail_api'
 ]
 
 MIDDLEWARE = [
@@ -76,10 +78,27 @@ WSGI_APPLICATION = 'dreMailAPI.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASS'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT')
     }
 }
+
+if DEBUG == True:
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': config("LOCAL_DB_NAME"),
+            'USER': config("LOCAL_DB_USER"),
+            'PASSWORD': config("LOCAL_DB_PASSWORD"),
+            'HOST': "localhost",
+            'PORT': ''
+        }
+    }
 
 
 # Password validation

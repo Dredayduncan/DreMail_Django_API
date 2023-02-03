@@ -1,2 +1,5 @@
 env
 .env
+dreMailAPI/__pycache__
+dre_mail_api/__pycache__
+dre_mail_api/migrations/__pycache__
