@@ -8,6 +8,8 @@ from rest_framework import permissions
 from .models import *
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import generics
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
 
 def successResponse(message):
     return {
@@ -23,6 +25,8 @@ def errorResponse(message):
 
 # Create your views here.
 
+"""---------------AUTH ENDPOINTS-----------------"""
+# > This class is used to create a user
 class RegisterUserView(APIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = EmailUserSerializer
@@ -59,10 +63,145 @@ class RegisterUserView(APIView):
             raise APIException(errorResponse(e))
 
 
+# This view will allow authenticated users to update their profile.
+class UpdateProfileView(generics.UpdateAPIView):
 
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UpdateUserSerializer
+
+    def get_object(self, userID, requestID):
+        '''
+        Helper method to get the object with given userID
+        '''
+        try:
+
+            if not userID:
+                return User.objects.get(id=requestID)
+
+            return User.objects.get(id=userID)
+            
+        except User.DoesNotExist:
+            return None
+
+    # Update a user's details
+    def update(self, request, userID=None, *args, **kwargs):
+        '''
+        Updates the todo item with given userID if exists
+        '''
+
+        try:
+
+            # This is checking if the user is a superuser or if the user is trying to access their own
+            # data.
+            if User.objects.get(id=request.user.id).is_superuser == False and userID is not None and request.user.id != userID:
+                return Response(
+                    errorResponse("You do not have access to perform this action"),
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # This is checking if the user is a superuser or if the user is trying to access their own
+            # data.
+            self.object = self.get_object(userID, request.user.id)
+
+            if not self.object:
+                return Response(
+                    errorResponse("User with specified ID does not exists."),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            data = {
+                'first_name': request.data.get('first_name'),
+                'last_name': request.data.get('last_name'),
+                "email": request.data.get("email"),
+                "username": request.data.get("username"),
+                "avi": request.data.get("avi")
+            }
+
+            serializer = self.get_serializer(data=data)
+
+            if serializer.is_valid():
+                
+                serializer.update(instance=self.object, validated_data=data)
+    
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            raise APIException(errorResponse(e))
+
+
+# It's a class that inherits from the UpdateAPIView class and it's used to update a user's password
+class ChangePasswordView(generics.UpdateAPIView):
+    # add permission to check if user is authenticated
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChangePasswordSerializer
+
+    def get_object(self, userID, requestID):
+        '''
+        Helper method to get the object with given userID
+        '''
+        try:
+
+            if not userID:
+                return User.objects.get(id=requestID)
+
+            return User.objects.get(id=userID)
+            
+        except User.DoesNotExist:
+            return None
+
+    # Update a user's details
+    def update(self, request, userID=None, *args, **kwargs):
+        '''
+        Updates the todo item with given userID if exists
+        '''
+
+        try:
+
+            # This is checking if the user is a superuser or if the user is trying to access their own
+            # data.
+            if User.objects.get(id=request.user.id).is_superuser == False and userID is not None and request.user.id != userID:
+                return Response(
+                    errorResponse("You do not have access to perform this action"),
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # This is checking if the user is a superuser or if the user is trying to access their own
+            # data.
+            self.object = self.get_object(userID, request.user.id)
+
+            if not self.object:
+                return Response(
+                    errorResponse("User with specified ID does not exists."),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            data = {
+                'old_password': request.data.get('old_password'),
+                'new_password': request.data.get('new_password'),
+                "confirm_password": request.data.get("confirm_password")
+            }
+
+            serializer = self.get_serializer(data=data)
+
+            if serializer.is_valid():
+                
+                serializer.update(instance=self.object, validated_data=data)
+    
+                return Response(successResponse("Password reset successful"), status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            raise APIException(errorResponse(e))
+
+
+# It takes a refresh token, blacklists it, and returns a success message
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
+    # logout a user and destroy their token
     def post(self, request):
         try:
 
@@ -83,8 +222,9 @@ class UserView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
     queryset = EmailUser.objects.all()
     serializer_class = EmailUserSerializer
-    # query
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['user__id']
+    search_fields = ['user__first_name', 'user__last_name', 'user__username', 'user__email']
 
 
 class UserDetailView(APIView):
@@ -113,12 +253,6 @@ class UserDetailView(APIView):
         '''
      
         userInstance = self.get_object(userID, request.user.id)
-
-        if userInstance == False:
-            return Response(
-                errorResponse("You do not have access to perform this action"),
-                status=status.HTTP_403_FORBIDDEN
-            )
 
         if not userInstance:
             return Response(
@@ -157,7 +291,6 @@ class UserDetailView(APIView):
             'last_name': request.data.get('user.last_name'),
             'username': request.data.get('user.username'),
             "email": request.data.get('user.email'),
-            "password": request.data.get('user.password')
         }
 
         emailUserData = {
