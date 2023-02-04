@@ -6,8 +6,52 @@ from rest_framework.exceptions import APIException
 from rest_framework import status
 from rest_framework import permissions
 from .models import *
+from django.views.decorators.csrf import csrf_protect 
+from rest_framework_simplejwt.tokens import RefreshToken
+
+def successResponse(message):
+    return {
+        "detail": message
+    }
+
+def errorResponse(message):
+    return {
+       "error": {
+        "detail": message
+       }
+    }
 
 # Create your views here.
+
+class BlacklistRefreshView(APIView):
+    def post(self, request):
+        token = RefreshToken(request.data.get('refresh'))
+        token.blacklist()
+        successMessage = successResponse("You have been logged out successfully.")
+        return Response(successMessage)
+
+
+class RegisterUserView(APIView):
+    # Create a user
+    def post(self, request, *args, **kwargs):
+        '''
+        Create the Todo with given todo data
+        '''
+        data = {
+            'first_name': request.data['first_name'],
+            'last_name': request.data['last_name'],
+            'username': request.user['username'],
+            "email": request.user['email'],
+            "password": request.user['password']
+        }
+
+        serializer = EmailUserSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class EmailUserView(APIView):
@@ -30,26 +74,6 @@ class EmailUserView(APIView):
 
         except Exception as e:
             raise APIException(e)
-
-    # Create a user
-    def post(self, request, *args, **kwargs):
-        '''
-        Create the Todo with given todo data
-        '''
-        data = {
-            'first_name': request.data['first_name'],
-            'last_name': request.data['last_name'],
-            'username': request.user['username'],
-            "email": request.user['email'],
-            "password": request.user['password']
-        }
-
-        serializer = EmailUserSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmailUserDetailView(APIView):
