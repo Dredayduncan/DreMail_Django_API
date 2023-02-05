@@ -83,13 +83,13 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 # This class is used to update the user's first name, last name, email, and username
 class UpdateUserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
-    avi = serializers.ImageField(required=False)
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)
 
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'avi')
+        fields = ('username', 'first_name', 'last_name', 'email')
 
 
     # def validate_email(self, value):
@@ -108,7 +108,6 @@ class UpdateUserSerializer(serializers.ModelSerializer):
 
         emailUser = EmailUser.objects.get(user=instance)
 
-
         instance.first_name = validated_data['first_name']
         instance.last_name = validated_data['last_name']
         instance.email = validated_data['email']
@@ -116,10 +115,30 @@ class UpdateUserSerializer(serializers.ModelSerializer):
 
         if validated_data['avi'] is not None:
             # delete current image from directory
+            emailUser.avi.delete()
 
+            # store the new image
             emailUser.avi = validated_data['avi']
             emailUser.save()
 
+        instance.save()
+
+        return instance
+
+# This class is used to update the user's first name, last name, email, and username
+class UpdateAVISerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = EmailUser
+        fields = ['avi']
+
+    def update(self, instance, validated_data):
+
+        # delete current image from directory
+        instance.avi.delete()
+
+        # store the new image
+        instance.avi = validated_data['avi']
         instance.save()
 
         return instance

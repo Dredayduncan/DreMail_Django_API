@@ -12,6 +12,7 @@ urlpatterns = [
     path('register/', RegisterUserView.as_view(), name="register"),
     re_path(r'^change_password/(?P<userID>\d+)?/?$', ChangePasswordView.as_view(), name='change_password'),
     re_path(r'^update_profile/(?P<userID>\d+)?/?$', UpdateProfileView.as_view(), name='update_profile'),
+    re_path(r'^update_avi/(?P<userID>\d+)?/?$', UpdateAVIView.as_view(), name='update_avi'),
     path('users/', UserView.as_view()),
     re_path(r'^user/(?P<userID>\d+)?/?$', UserDetailView.as_view(), name="userDetail"),
 ]

@@ -130,6 +130,68 @@ class UpdateProfileView(generics.UpdateAPIView):
         except Exception as e:
             raise APIException(errorResponse(e))
 
+class UpdateAVIView(generics.UpdateAPIView):
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UpdateAVISerializer
+
+    def get_object(self, userID, requestID):
+        '''
+        Helper method to get the object with given userID
+        '''
+        try:
+
+            if not userID:
+                return EmailUser.objects.get(user__id=requestID)
+
+            return EmailUser.objects.get(user__id=userID)
+            
+        except EmailUser.DoesNotExist:
+            return None
+
+    # Update a user's details
+    def update(self, request, userID=None, *args, **kwargs):
+        '''
+        Updates the todo item with given userID if exists
+        '''
+
+        try:
+
+            # This is checking if the user is a superuser or if the user is trying to access their own
+            # data.
+            if User.objects.get(id=request.user.id).is_superuser == False and userID is not None and request.user.id != userID:
+                return Response(
+                    errorResponse("You do not have access to perform this action"),
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # This is checking if the user is a superuser or if the user is trying to access their own
+            # data.
+            self.object = self.get_object(userID, request.user.id)
+
+            if not self.object:
+                return Response(
+                    errorResponse("User with specified ID does not exists."),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            data = {
+                "avi": request.data.get("avi")
+            }
+
+            serializer = self.get_serializer(data=data)
+
+            if serializer.is_valid():
+                
+                serializer.update(instance=self.object, validated_data=data)
+    
+                return Response(successResponse("Successfully updated the AVI"), status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            raise APIException(errorResponse(e))
+
 
 # It's a class that inherits from the UpdateAPIView class and it's used to update a user's password
 class ChangePasswordView(generics.UpdateAPIView):
