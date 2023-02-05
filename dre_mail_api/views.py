@@ -27,45 +27,15 @@ def errorResponse(message):
 
 """---------------AUTH ENDPOINTS-----------------"""
 # > This class is used to create a user
-class RegisterUserView(APIView):
+class RegisterUserView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = EmailUserSerializer
     
-    # Create a user
-    def post(self, request, *args, **kwargs):
-        '''
-        Create the Todo with given todo data
-        '''
-
-        try:
-            userData = {
-                'first_name': request.data.get('user.first_name'),
-                'last_name': request.data.get('user.last_name'),
-                'username': request.data.get('user.username'),
-                "email": request.data.get('user.email'),
-                "password": request.data.get('user.password')
-            }
-
-            emailUserData = {
-                "user": userData,
-                "avi": request.data.get("avi")
-
-            }
-
-            serializer = EmailUserSerializer(data=emailUserData)
-            
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            raise APIException(errorResponse(e))
 
 
 # This view will allow authenticated users to update their profile.
 class UpdateProfileView(generics.UpdateAPIView):
-
+    queryset = User.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UpdateUserSerializer
 
@@ -83,6 +53,23 @@ class UpdateProfileView(generics.UpdateAPIView):
         except User.DoesNotExist:
             return None
 
+    # Retrieve a user's details
+    def get(self, request, userID=None, *args, **kwargs):
+        '''
+        Retrieves the Todo with given userID
+        '''
+     
+        userInstance = self.get_object(userID, request.user.id)
+
+        if not userInstance:
+            return Response(
+                errorResponse("User with specified ID does not exists."),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = UpdateUserSerializer(userInstance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     # Update a user's details
     def update(self, request, userID=None, *args, **kwargs):
         '''
@@ -93,7 +80,10 @@ class UpdateProfileView(generics.UpdateAPIView):
 
             # This is checking if the user is a superuser or if the user is trying to access their own
             # data.
-            if User.objects.get(id=request.user.id).is_superuser == False and userID is not None and request.user.id != userID:
+        
+            if User.objects.get(id=request.user.id).is_superuser == False \
+                and userID is not None \
+                and str(request.user.id) != userID:
                 return Response(
                     errorResponse("You do not have access to perform this action"),
                     status=status.HTTP_403_FORBIDDEN
@@ -124,68 +114,6 @@ class UpdateProfileView(generics.UpdateAPIView):
                 serializer.update(instance=self.object, validated_data=data)
     
                 return Response(serializer.data, status=status.HTTP_200_OK)
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        except Exception as e:
-            raise APIException(errorResponse(e))
-
-class UpdateAVIView(generics.UpdateAPIView):
-
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = UpdateAVISerializer
-
-    def get_object(self, userID, requestID):
-        '''
-        Helper method to get the object with given userID
-        '''
-        try:
-
-            if not userID:
-                return EmailUser.objects.get(user__id=requestID)
-
-            return EmailUser.objects.get(user__id=userID)
-            
-        except EmailUser.DoesNotExist:
-            return None
-
-    # Update a user's details
-    def update(self, request, userID=None, *args, **kwargs):
-        '''
-        Updates the todo item with given userID if exists
-        '''
-
-        try:
-
-            # This is checking if the user is a superuser or if the user is trying to access their own
-            # data.
-            if User.objects.get(id=request.user.id).is_superuser == False and userID is not None and request.user.id != userID:
-                return Response(
-                    errorResponse("You do not have access to perform this action"),
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
-            # This is checking if the user is a superuser or if the user is trying to access their own
-            # data.
-            self.object = self.get_object(userID, request.user.id)
-
-            if not self.object:
-                return Response(
-                    errorResponse("User with specified ID does not exists."),
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-                
-            data = {
-                "avi": request.data.get("avi")
-            }
-
-            serializer = self.get_serializer(data=data)
-
-            if serializer.is_valid():
-                
-                serializer.update(instance=self.object, validated_data=data)
-    
-                return Response(successResponse("Successfully updated the AVI"), status=status.HTTP_200_OK)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -223,7 +151,9 @@ class ChangePasswordView(generics.UpdateAPIView):
 
             # This is checking if the user is a superuser or if the user is trying to access their own
             # data.
-            if User.objects.get(id=request.user.id).is_superuser == False and userID is not None and request.user.id != userID:
+            if User.objects.get(id=request.user.id).is_superuser == False \
+                and userID is not None \
+                and str(request.user.id) != userID:
                 return Response(
                     errorResponse("You do not have access to perform this action"),
                     status=status.HTTP_403_FORBIDDEN
@@ -276,8 +206,78 @@ class LogoutView(APIView):
             return Response(successMessage)
         except Exception as e:
             raise APIException(errorResponse(e))
+            
 
 
+"""-------------------- USER ENDPOINTS --------------------"""
+
+# This class is used to update the AVI of a user
+class UpdateAVIView(generics.UpdateAPIView):
+    queryset = EmailUser.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UpdateAVISerializer
+
+    def get_object(self, userID, requestID):
+        '''
+        Helper method to get the object with given userID
+        '''
+        try:
+
+            if not userID:
+                return EmailUser.objects.get(user__id=requestID)
+
+            return EmailUser.objects.get(user__id=userID)
+            
+        except EmailUser.DoesNotExist:
+            return None
+
+    # Update a user's details
+    def update(self, request, userID=None, *args, **kwargs):
+        '''
+        Updates the todo item with given userID if exists
+        '''
+
+        try:
+
+            # This is checking if the user is a superuser or if the user is trying to access their own
+            # data.
+            if User.objects.get(id=request.user.id).is_superuser == False \
+                and userID is not None \
+                and str(request.user.id) != userID:
+                return Response(
+                    errorResponse("You do not have access to perform this action"),
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # This is checking if the user is a superuser or if the user is trying to access their own
+            # data.
+            self.object = self.get_object(userID, request.user.id)
+
+            if not self.object:
+                return Response(
+                    errorResponse("User with specified ID does not exists."),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            data = {
+                "avi": request.data.get("avi")
+            }
+
+            serializer = self.get_serializer(data=data)
+
+            if serializer.is_valid():
+                
+                serializer.update(instance=self.object, validated_data=data)
+    
+                return Response(successResponse("Successfully updated the AVI"), status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            raise APIException(errorResponse(e))
+
+# This class is a ListAPIView that returns a list of all users, and allows you to filter by user id,
+# first name, last name, username, and email
 class UserView(generics.ListAPIView):
 
     # Add permission to check if a user is authenticated 
@@ -289,7 +289,8 @@ class UserView(generics.ListAPIView):
     search_fields = ['user__first_name', 'user__last_name', 'user__username', 'user__email']
 
 
-class UserDetailView(APIView):
+# This class is used to retrieve and delete a user
+class UserDetailView(generics.RetrieveDestroyAPIView):
     # add permission to check if user is authenticated
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = EmailUserSerializer
@@ -325,72 +326,41 @@ class UserDetailView(APIView):
         serializer = EmailUserSerializer(userInstance)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    # Update a user's details
-    def put(self, request, userID=None, *args, **kwargs):
-        '''
-        Updates the todo item with given userID if exists
-        '''
-
-        # This is checking if the user is a superuser or if the user is trying to access their own
-        # data.
-        if User.objects.get(id=request.user.id).is_superuser == False and userID is not None and request.user.id != userID:
-            return Response(
-                errorResponse("You do not have access to perform this action"),
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        # This is checking if the user is a superuser or if the user is trying to access their own
-        # data.
-        userInstance = self.get_object(userID, request.user.id)
-        if not userInstance:
-            return Response(
-                errorResponse("User with specified ID does not exists."),
-                status=status.HTTP_400_BAD_REQUEST
-            )
-            
-        userData = {
-            'first_name': request.data.get('user.first_name'),
-            'last_name': request.data.get('user.last_name'),
-            'username': request.data.get('user.username'),
-            "email": request.data.get('user.email'),
-        }
-
-        emailUserData = {
-            "user": userData,
-            "avi": request.data.get("avi")
-
-        }
-
-        serializer = EmailUserSerializer(instance=userInstance, data=emailUserData, partial = True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     # Delete a user
     def delete(self, request, userID=None, *args, **kwargs):
         '''
         Deletes the user with given id if exists
         '''
-        userInstance = self.get_object(userID, request.user.id)
 
-        # This is checking if the user is a superuser or if the user is trying to access their own
-        # data.
-        if User.objects.get(id=request.user.id).is_superuser == False and request.user.id != userID:
-            return Response(
-                errorResponse("You do not have access to perform this action"),
-                status=status.HTTP_403_FORBIDDEN
+        try:
+            userInstance = self.get_object(userID, request.user.id)
+
+            # This is checking if the user is a superuser or if the user is trying to access their own
+            # data.
+            if User.objects.get(id=request.user.id).is_superuser == False \
+                and userID is not None \
+                and str(request.user.id) != userID:
+                return Response(
+                    errorResponse("You do not have access to perform this action"),
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # This is checking if the user exists. If the user does not exist, it will return an error
+            # message.
+            if not userInstance:
+                return Response(
+                    errorResponse("User with specified ID does not exists."),  
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            
+            user = userInstance.user
+            userInstance.delete()
+            user.delete()
+            return Response(successResponse("User has been deleted."), 
+                status=status.HTTP_200_OK
             )
 
-        # This is checking if the user exists. If the user does not exist, it will return an error
-        # message.
-        if not userInstance:
-            return Response(
-                errorResponse("User with specified ID does not exists."),  
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        userInstance.delete()
-        return Response(successResponse("User has been deleted."), 
-            status=status.HTTP_200_OK
-        )
+        except Exception as e:
+            raise APIException(errorResponse(e))
