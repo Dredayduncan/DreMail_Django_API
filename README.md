@@ -26,11 +26,11 @@ This Django API allows you to manage your email with features such as authentica
 
 1. Clone the repository:
 ```
-git clone https://github.com/[username]/django-email-management-system.git
+git clone https://github.com/Dredayduncan/DreMail_Django_API.git
 ```
 2. Change into the project directory:
 ```
-cd django-email-management-system
+cd DreMail_Django_API
 ```
 3. Create your virtual environment
 ```
@@ -53,5 +53,5 @@ python manage.py migrate
 ```
 7. Run the development server:
 ```
-python manage.py runserver
+python3 manage.py runserver
 ```
