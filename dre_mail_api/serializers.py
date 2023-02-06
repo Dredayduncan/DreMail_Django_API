@@ -2,6 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import *
 
+"""--------------- AUTH SERIALIZERS ---------------"""
+
 class MainUserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
@@ -13,11 +15,6 @@ class MainUserSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {"write_only": True}
         }
-
-class UserAviSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EmailUser
-        fields = ['avi']
 
 
 # It creates a new user and a new emailUser, and then saves them both
@@ -86,6 +83,10 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
         return instance
 
+
+"""--------------- USER SERIALIZERS ---------------"""
+
+
 # This class is used to update the user's first name, last name, email, and username
 class UpdateUserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
@@ -137,5 +138,73 @@ class UpdateAVISerializer(serializers.ModelSerializer):
         # store the new image
         instance.avi = validated_data['avi']
         instance.save()
+
+        return instance
+
+
+"""------------------ EMAIL SERIALIZERS -----------------"""
+
+class EmailSerializer(serializers.ModelSerializer):
+    attachment = serializers.FileField(required=False)
+
+    class Meta:
+        model = Email
+        fields = "__all__"
+
+
+# It's creating a draft and saving it to the database
+class DraftSerializer(serializers.ModelSerializer):
+    email = EmailSerializer()
+
+    class Meta:
+        model = Drafts
+        fields = ['id', 'email']
+
+    def create(self, validated_data):
+        """
+        It's creating a new email object and saving it to the database
+        
+        :param validated_data: The data that was validated by the serializer
+        :return: The draft object.
+        """
+        """Create and return a draft."""
+
+        # It's creating a new email object and saving it to the database.
+        email = Email(
+            subject = validated_data['email'].get("subject"),
+            message = validated_data['email'].get("message"),
+            attachment = validated_data['email'].get('attachment')
+        )
+
+        email.save()
+
+        
+        # It's creating a new draft object and saving it to the database.
+        draft = Drafts(
+            drafter = EmailUser.objects.get(user__id=self.context['request'].user.id),
+            email = email
+        )
+
+        draft.save()
+
+        return draft
+
+    def update(self, instance, validated_data):
+        """
+        It's creating a new email object and saving it to the database
+        
+        :param validated_data: The data that was validated by the serializer
+        :return: The draft object.
+        """
+        """Create and return a draft."""
+
+
+        # It's creating a new email object and saving it to the database.
+
+        instance.email.subject = validated_data['email'].get("subject")
+        instance.email.message = validated_data['email'].get("message")
+        instance.email.attachment = validated_data['email'].get('attachment')
+
+        instance.email.save()
 
         return instance

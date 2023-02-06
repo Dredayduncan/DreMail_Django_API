@@ -3,12 +3,10 @@ from .serializers import *
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
-from rest_framework import status
-from rest_framework import permissions
+from rest_framework import status, permissions, \
+    generics, filters, viewsets
 from .models import *
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import generics
-from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 
 def successResponse(message):
@@ -364,3 +362,18 @@ class UserDetailView(generics.RetrieveDestroyAPIView):
 
         except Exception as e:
             raise APIException(errorResponse(e))
+
+
+"""--------------- EMAIL ENDPOINTS ---------------"""
+
+# This is a viewset that allows the admin to view and edit emails.
+class EmailViewSet(viewsets.ModelViewSet):
+    serializer_class = EmailSerializer
+    queryset = Email.objects.all()
+    permission_classes = [permissions.IsAdminUser]
+
+# This class is a viewset that allows you to create, retrieve, update, and delete drafts
+class DraftViewSet(viewsets.ModelViewSet):
+    serializer_class = DraftSerializer
+    queryset = Drafts.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
