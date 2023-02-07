@@ -8,7 +8,7 @@ class EmailUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
   
     # Create the attributes for the user
-    avi = models.ImageField(upload_to="userImages/", null=True)
+    avi = models.ImageField(upload_to="userImages/", null=True, blank=True)
 
     def __str__(self):
         return str(self.user)
@@ -34,10 +34,10 @@ class Email(models.Model):
 class EmailTransfer(models.Model):
     email = models.ForeignKey(to=Email, on_delete=models.CASCADE)
     sender = models.ForeignKey(to=EmailUser, on_delete=models.CASCADE, related_name="sender")
-    recipient = models.ForeignKey(to=EmailUser, on_delete=models.CASCADE, related_name="recipient")
-    group = models.ForeignKey(to=EmailGroup, on_delete=models.CASCADE)
-    dateSent = models.DateField(default=now, null=False, blank=False)
-    unread = models.BooleanField(default=False)
+    recipient = models.ForeignKey(null=True, to=EmailUser, on_delete=models.CASCADE, related_name="recipient")
+    group = models.ForeignKey(null=True, to=EmailGroup, on_delete=models.CASCADE)
+    dateSent = models.DateTimeField(default=now, null=False, blank=False)
+    unread = models.BooleanField(default=True)
 
 class Favorites(models.Model):
     favoriter = models.ForeignKey(to=EmailUser, on_delete=models.CASCADE)

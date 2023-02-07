@@ -9,6 +9,7 @@ from rest_framework_simplejwt.views import (
 router = DefaultRouter(trailing_slash=False)
 router.register('emails/', EmailViewSet, basename="email")
 router.register(r'drafts/?', DraftViewSet, basename="drafts")
+router.register(r'emailTransfers/?', EmailTransferViewSet, basename="emailTransfers")
 
 urlpatterns = [
     path('', include(router.urls)),

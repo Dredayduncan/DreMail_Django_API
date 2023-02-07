@@ -61,21 +61,21 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if attrs['new_password'] != attrs['confirm_password']:
-            raise serializers.ValidationError({"password": "Password fields didn't match."})
+            raise serializers.ValidationError("Password fields didn't match.")
 
         return attrs
 
     def validate_old_password(self, value):
         user = self.context['request'].user
         if not user.check_password(value):
-            raise serializers.ValidationError({"old_password": "Old password is not correct"})
+            raise serializers.ValidationError("Old password is not correct")
         return value
 
     def update(self, instance, validated_data):
         user = self.context['request'].user
 
         if user.id != instance.id:
-            raise serializers.ValidationError({"authorize": "You dont have permission for this user."})
+            raise serializers.ValidationError("You dont have permission for this user.")
 
         instance.set_password(validated_data['new_password'])
         instance.is_active = True
@@ -102,13 +102,13 @@ class UpdateUserSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         user = self.context['request'].user
         if User.objects.exclude(id=user.id).filter(email=value).exists():
-            raise serializers.ValidationError({"email": "This email is already in use."})
+            raise serializers.ValidationError("This email is already in use.")
         return value
 
     def validate_username(self, value):
         user = self.context['request'].user
         if User.objects.exclude(id=user.id).filter(username=value).exists():
-            raise serializers.ValidationError({"username": "This username is already in use."})
+            raise serializers.ValidationError("This username is already in use.")
         return value
 
     def update(self, instance, validated_data):
@@ -144,12 +144,120 @@ class UpdateAVISerializer(serializers.ModelSerializer):
 
 """------------------ EMAIL SERIALIZERS -----------------"""
 
+
+# This is a serializer for the Email model, and it has an attachment field that is a FileField.
 class EmailSerializer(serializers.ModelSerializer):
     attachment = serializers.FileField(required=False)
 
     class Meta:
         model = Email
         fields = "__all__"
+
+
+class EmailTransferSerializer(serializers.ModelSerializer):
+    email = EmailSerializer()
+    recipient = EmailUserSerializer(read_only=True)
+    recipient_id = serializers.IntegerField(write_only=True, required=True)
+
+    class Meta:
+        model = EmailTransfer
+        fields = ["id", "recipient", "recipient_id", 'email', "unread", "dateSent"]
+        extra_kwargs = {
+            "unread": {
+                "read_only": True
+            },
+            "dateSent": {
+                "read_only": True
+            }
+        }
+
+    def validate_recipient_id(self, value):
+        """
+        If the user exists, and the user is not the same as the user sending the email, then return the
+        value
+        
+        :param value: The value of the field being validated
+        :return: The value of the recipient.
+        """
+        try:
+            
+            user = self.context['request'].user
+
+            if EmailUser.objects.filter(id=value).exists() == False:
+                raise serializers.ValidationError("User with specified ID does not exist.")
+
+
+            if EmailUser.objects.get(user__id=user.id) == EmailUser.objects.get(id=value):
+                raise serializers.ValidationError("You cannot send an email to yourself")
+
+            
+            return value
+        except Exception as e:
+            raise serializers.ValidationError(e)
+
+
+    def create(self, validated_data):
+        """
+        It's creating a new email object and saving it to the database. It's creating a new draft object
+        and saving it to the database
+        
+        :param validated_data: It's the data that has been validated by the serializer
+        :return: It's returning the emailTransfer object.
+        """
+    
+
+        # It's creating a new email object and saving it to the database.
+        email = Email(
+            subject = validated_data['email'].get("subject"),
+            message = validated_data['email'].get("message"),
+            attachment = validated_data['email'].get('attachment')
+        )
+
+        email.save()
+
+        
+        # It's creating a new draft object and saving it to the database.
+        emailTransfer = EmailTransfer(
+            recipient = EmailUser.objects.get(id=validated_data.get('recipient_id')),
+            sender = EmailUser.objects.get(user__id=self.context['request'].user.id),
+            email = email
+        )
+
+        emailTransfer.save()
+
+        return emailTransfer
+
+
+# The InboxSerializer class is a ModelSerializer that serializes the EmailTransfer model 
+# for the inbox. It has a nested EmailSerializer and EmailUserSerializer
+class InboxSerializer(serializers.ModelSerializer):
+    email = EmailSerializer()
+    sender = EmailUserSerializer(read_only=True)
+
+    class Meta:
+        model = EmailTransfer
+        fields = ["id", "sender", 'email', "unread", "dateSent"]
+        extra_kwargs = {
+            "unread": {
+                "read_only": True
+            },
+            "dateSent": {
+                "read_only": True
+            }
+        }
+
+class SentEmailSerializer(serializers.ModelSerializer):
+    email = EmailSerializer()
+    recipient = EmailUserSerializer(read_only=True)
+
+    class Meta:
+        model = EmailTransfer
+        fields = ["id", "recipient", 'email', "dateSent"]
+        extra_kwargs = {
+            "dateSent": {
+                "read_only": True
+            }
+        }
 
 
 # It's creating a draft and saving it to the database
