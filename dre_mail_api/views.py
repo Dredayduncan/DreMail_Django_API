@@ -456,20 +456,30 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         )
 
         # Getting all the deleted emails ids of the user.
-        TrashsIDs = Trash.objects.filter(
+        trashedEmailIDs = list(Trash.objects.filter(
             deleter=emailUser
-        ).values_list("emailTransfer__id")
+        ).values_list("emailTransfer__id", flat=True))
+
+       # Filtering the spammer and getting the values of the emailTransfer__id.
+        spamEmailIDs = list(Spam.objects.filter(
+            spammer=emailUser
+        ).values_list("emailTransfer__id", flat=True))
+
+        # Filtering the Spam model for the emailUser and then returning the emailTransfer__id
+        junkEmailIDs = list(Junk.objects.filter(
+            junker=emailUser
+        ).values_list("emailTransfer__id", flat=True))
 
         
         # Filtering the emails based on the unread status.
         if unread is None:
             inbox = EmailTransfer.objects.exclude(
-                id__in=TrashsIDs
+                id__in=trashedEmailIDs + spamEmailIDs + junkEmailIDs
             )
 
         else:
             inbox = EmailTransfer.objects.exclude(
-                id__in=TrashsIDs,
+                id__in=trashedEmailIDs + spamEmailIDs + junkEmailIDs,
             ).filter(unread=unread)
 
         page = self.paginate_queryset(inbox)
@@ -502,7 +512,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-    @action(detail=False, serializer_class=TrashSerializer, methods=['get', 'post'])
+    @action(detail=False, serializer_class=EmailActionSerializer, methods=['get', 'post'])
     def trash(self, request):
 
         # Check if the user sends a post request and move the email back to inbox
@@ -515,14 +525,91 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             user__id=self.request.user.id
         )
         
-        Trashs = Trash.objects.filter(deleter=emailUser)
+        trash = Trash.objects.filter(deleter=emailUser)
 
-        page = self.paginate_queryset(Trashs)
+        page = self.paginate_queryset(trash)
         
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(Trashs, many=True)
+        serializer = self.get_serializer(trash, many=True)
         return Response(serializer.data)
+
+
+    @action(detail=False, serializer_class=EmailActionSerializer, methods=['get', 'post'])
+    def spam(self, request):
+
+        # Check if the user sends a post request and move the email back to inbox
+        if self.request.method == "POST":
+            self.create(request=request)
+            return Response(CustomResponses.successResponse("Email has been moved back to inbox"))
+
+        # Getting the emailUser object from the database.
+        emailUser = EmailUser.objects.get(
+            user__id=self.request.user.id
+        )
+        
+        spam = Spam.objects.filter(spammer=emailUser)
+
+        page = self.paginate_queryset(spam)
+        
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(spam, many=True)
+        return Response(serializer.data)
+
+
+    @action(detail=False, serializer_class=EmailActionSerializer, methods=['get', 'post'])
+    def junk(self, request):
+
+        # Check if the user sends a post request and move the email back to inbox
+        if self.request.method == "POST":
+            
+            self.create(request=request)
+            return Response(CustomResponses.successResponse("Email has been moved back to inbox"))
+
+        # Getting the emailUser object from the database.
+        emailUser = EmailUser.objects.get(
+            user__id=self.request.user.id
+        )
+        
+        junk = Junk.objects.filter(junker=emailUser)
+
+        page = self.paginate_queryset(junk)
+        
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(junk, many=True)
+        return Response(serializer.data)
+
+
+    @action(detail=False, serializer_class=EmailActionSerializer, methods=['get', 'post'])
+    def favorites(self, request):
+
+        # Check if the user sends a post request and move the email back to inbox
+        if self.request.method == "POST":
+            self.create(request=request)
+            return Response(CustomResponses.successResponse("Email has been moved back to inbox"))
+
+        # Getting the emailUser object from the database.
+        emailUser = EmailUser.objects.get(
+            user__id=self.request.user.id
+        )
+        
+        favorites = Favorites.objects.filter(favoriter=emailUser)
+
+        page = self.paginate_queryset(favorites)
+        
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(favorites, many=True)
+        return Response(serializer.data)
+
 

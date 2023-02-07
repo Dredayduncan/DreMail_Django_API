@@ -197,15 +197,11 @@ class EmailTransferSerializer(serializers.ModelSerializer):
             user = self.context['request'].user
 
             if EmailUser.objects.filter(id=value).exists() == False:
-                raise serializers.ValidationError(
-                    CustomResponses.errorResponse("User with specified ID does not exist.")
-                )
+                raise CustomResponses.errorResponse("User with specified ID does not exist.")
 
 
             if EmailUser.objects.get(user__id=user.id) == EmailUser.objects.get(id=value):
-                raise serializers.ValidationError(
-                    CustomResponses.errorResponse("You cannot send an email to yourself")
-                )
+                raise CustomResponses.errorResponse("You cannot send an email to yourself")
 
             
             return value
@@ -265,7 +261,7 @@ class InboxSerializer(serializers.ModelSerializer):
             },
         }
 
-class TrashSerializer(serializers.ModelSerializer):
+class EmailActionSerializer(serializers.ModelSerializer):
     emailTransfer = InboxSerializer(read_only=True)
     email_id = serializers.IntegerField(write_only=True, required=True)
 
@@ -285,13 +281,11 @@ class TrashSerializer(serializers.ModelSerializer):
         try:
 
             if EmailTransfer.objects.filter(id=value).exists() == False:
-                raise serializers.ValidationError(
-                    CustomResponses.errorResponse("Email with specified ID does not exist.")
-                )
+                raise CustomResponses.errorResponse("Email with specified ID does not exist.")
 
             return value
         except Exception as e:
-            raise serializers.ValidationError(CustomResponses.errorResponse(e))
+            raise CustomResponses.errorResponse(e)
 
     def create(self, validated_data):
         """
@@ -303,11 +297,40 @@ class TrashSerializer(serializers.ModelSerializer):
         """
 
         try:
+            endpoint = self.context['request'].get_full_path()
+            endpointType = endpoint.split("/")[-1]
+
+            # Remove the email from their respective Models
+            
+            # Deleting the email from the trash.
+            if endpointType == "trash":
        
-            return Trash.objects.get(
-                deleter=EmailUser.objects.get(user__id=self.context['request'].user.id),
-                emailTransfer=EmailTransfer.objects.get(id=validated_data.get("email_id"))
-            ).delete()
+                return Trash.objects.get(
+                    deleter=EmailUser.objects.get(user__id=self.context['request'].user.id),
+                    emailTransfer=EmailTransfer.objects.get(id=validated_data.get("email_id"))
+                ).delete()
+
+            # Deleting the email from spam.
+            elif endpointType == "spam":
+                return Spam.objects.get(
+                    spammer=EmailUser.objects.get(user__id=self.context['request'].user.id),
+                    emailTransfer=EmailTransfer.objects.get(id=validated_data.get("email_id"))
+                ).delete()
+                
+            # Deleting the email from junk.
+            elif endpointType == 'junk':
+                return Junk.objects.get(
+                    junker=EmailUser.objects.get(user__id=self.context['request'].user.id),
+                    emailTransfer=EmailTransfer.objects.get(id=validated_data.get("email_id"))
+                ).delete()
+
+            # Deleting the email from favorite.
+            else:
+                return Favorites.objects.get(
+                    favoriter=EmailUser.objects.get(user__id=self.context['request'].user.id),
+                    emailTransfer=EmailTransfer.objects.get(id=validated_data.get("email_id"))
+                ).delete()
+
         
         except Exception as e:
             raise serializers.ValidationError(CustomResponses.errorResponse(e))
