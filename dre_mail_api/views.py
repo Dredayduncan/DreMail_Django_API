@@ -386,6 +386,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['sender', 'recipient']
     search_fields = ['sender', 'recipient'] #'email__subject', 'email__message']
+    http_method_names = ['get', 'post', 'delete']
 
     def get_queryset(self):
 
