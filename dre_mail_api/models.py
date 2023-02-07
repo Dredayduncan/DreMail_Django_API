@@ -47,7 +47,7 @@ class Junk(models.Model):
     junker = models.ForeignKey(to=EmailUser, on_delete=models.CASCADE)
     emailTransfer = models.ForeignKey(to=EmailTransfer, on_delete=models.CASCADE)
 
-class DeletedEmail(models.Model):
+class Trash(models.Model):
     deleter = models.ForeignKey(to=EmailUser, on_delete=models.CASCADE)
     emailTransfer = models.ForeignKey(to=EmailTransfer, on_delete=models.CASCADE)
 

@@ -102,7 +102,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='DeletedEmail',
+            name='Trash',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('deleter', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='dre_mail_api.emailuser')),

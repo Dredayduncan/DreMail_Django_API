@@ -3,6 +3,7 @@
 ## Introduction
 
 This Django API allows you to manage your email with features such as authentication, pagination, and functionalities such as registering a user, user login, getting inbox, sending an email, getting details of a particular email, deleting an email and more. The database for this API is Postgres.
+### [The Database Development Process](https://github.com/Dredayduncan/Email-Database)
 
 ## Base URL
 <not_set>

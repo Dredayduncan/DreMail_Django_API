@@ -9,7 +9,7 @@ admin.site.register(Email)
 admin.site.register(EmailTransfer)
 admin.site.register(Favorites)
 admin.site.register(Junk)
-admin.site.register(DeletedEmail)
+admin.site.register(Trash)
 admin.site.register(Spam)
 admin.site.register(Drafts)
 
