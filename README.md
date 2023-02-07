@@ -47,10 +47,10 @@ pip install -r requirements.txt
 ```
 6. Migrate the database:
 ```
-python manage.py makemigrations
+python3 manage.py makemigrations
 ```
 ```
-python manage.py migrate
+python3 manage.py migrate
 ```
 7. Run the development server:
 ```
