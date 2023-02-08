@@ -357,6 +357,17 @@ class UserDetailView(generics.RetrieveDestroyAPIView):
             raise APIException(CustomResponses.errorResponse(e))
 
 
+
+"""--------------- EMAIL GROUP ENDPOINTS ---------------"""
+
+class EmailGroupViewSet(viewsets.ModelViewSet):
+    queryset = EmailGroup.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = EmailGroupSerializer
+
+
+
+
 """--------------- EMAIL ENDPOINTS ---------------"""
 
 # This is a viewset that allows the admin to view and edit emails.

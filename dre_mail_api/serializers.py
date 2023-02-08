@@ -154,6 +154,14 @@ class UpdateAVISerializer(serializers.ModelSerializer):
         return instance
 
 
+"""------------------ EMAIL GROUP SERIALIZERS -----------------"""
+
+class EmailGroupSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = EmailGroup
+        fields = "__all__"
+
 """------------------ EMAIL SERIALIZERS -----------------"""
 
 
