@@ -250,15 +250,12 @@ class UpdateAVIView(generics.UpdateAPIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
                 
-            data = {
-                "avi": request.data.get("avi")
-            }
-
-            serializer = self.get_serializer(data=data)
+        
+            serializer = self.get_serializer(data=request.data)
 
             if serializer.is_valid():
                 
-                serializer.update(instance=self.object, validated_data=data)
+                serializer.update(instance=self.object, validated_data=request.data)
     
                 return Response(CustomResponses.successResponse("Successfully updated the AVI"), status=status.HTTP_200_OK)
 
@@ -364,6 +361,60 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
     queryset = EmailGroup.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = EmailGroupSerializer
+
+    @action(detail=True, serializer_class=GroupMembersSerializer)
+    def members(self, request, pk=None):
+
+        emailGroupMembers = EmailGroupMembers.objects.filter(
+            group = self.get_object(),
+        )
+
+        page = self.paginate_queryset(emailGroupMembers)
+    
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(emailGroupMembers, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], serializer_class=EmailGroupMemberSerializer)
+    def add_member(self, request, pk=None):
+
+        try:
+
+            emailGroupMember = EmailGroupMembers(
+                group = self.get_object(),
+                user = EmailUser.objects.get(user__id=request.data.get("id"))
+            )
+
+            emailGroupMember.save()
+
+            return Response(
+                CustomResponses.successResponse("Member has been added successfully")
+            )
+
+        except Exception as e:
+            raise APIException(CustomResponses.errorResponse(e))
+
+    @action(detail=True, methods=['post'], serializer_class=EmailGroupMemberSerializer)
+    def remove_member(self, request, pk=None):
+
+        try:
+
+            emailGroupMember = EmailGroupMembers.objects.get(
+                group=self.get_object(),
+                user=EmailUser.objects.get(user__id=request.data.get("id"))
+            )
+
+            emailGroupMember.delete()
+
+            return Response(
+                CustomResponses.successResponse("Member has been removed successfully")
+            )
+
+        except Exception as e:
+            raise APIException(CustomResponses.errorResponse(e))
 
 
 
@@ -501,6 +552,34 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(inbox, many=True)
         return Response(serializer.data)
+
+
+    @action(detail=False, serializer_class=ReadStatusUpdateSerializers, methods=['post'])
+    def read_status(self, request):
+
+        try:
+
+            serializer = self.get_serializer(data=request.data)
+            self.object = EmailTransfer.objects.get(id=request.data.get("id"))
+            
+
+            if serializer.is_valid():
+                
+                
+                serializer.update(instance=self.object, validated_data=request.data)
+    
+                return Response(
+                    CustomResponses.successResponse(
+                        "Successfully updated unread status"
+                    ), 
+                    status=status.HTTP_200_OK
+                )
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            raise APIException(CustomResponses.errorResponse(e))
+        
 
     
     @action(detail=False, serializer_class=SentEmailSerializer)

@@ -20,7 +20,7 @@ class EmailGroup(models.Model):
     name = models.CharField(max_length=20, blank=False, null=False)
     description = models.TextField(null=False)
 
-class UserEmailGroup(models.Model):
+class EmailGroupMembers(models.Model):
   
     # Create the attributes for the user
     user = models.ForeignKey(to=EmailUser, on_delete=models.CASCADE)

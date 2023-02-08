@@ -10,6 +10,7 @@ class MainUserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
     email = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)
  
     class Meta:
         model = User
@@ -162,6 +163,22 @@ class EmailGroupSerializer(serializers.ModelSerializer):
         model = EmailGroup
         fields = "__all__"
 
+class GroupMembersSerializer(serializers.ModelSerializer):
+    user = EmailUserSerializer()
+    
+    class Meta:
+        model = EmailGroupMembers
+        fields = ["user"]
+
+class EmailGroupMemberSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(write_only=True)
+    
+    class Meta:
+        model = EmailGroupMembers
+        fields = ['id']
+
+
+
 """------------------ EMAIL SERIALIZERS -----------------"""
 
 
@@ -268,6 +285,17 @@ class InboxSerializer(serializers.ModelSerializer):
                 "read_only": True
             },
         }
+
+
+# This class is used to update the read status of an email
+class ReadStatusUpdateSerializers(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=True)
+    unread = serializers.BooleanField(required=True)
+
+    class Meta:
+        model = EmailTransfer
+        fields = ["id", "unread"]
+
 
 class EmailActionSerializer(serializers.ModelSerializer):
     emailTransfer = InboxSerializer(read_only=True)
