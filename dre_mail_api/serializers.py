@@ -209,12 +209,14 @@ class EmailSerializer(serializers.ModelSerializer):
 class EmailTransferSerializer(serializers.ModelSerializer):
     email = EmailSerializer()
     recipient = EmailUserSerializer(read_only=True)
+    group = EmailGroupSerializer(read_only=True)
     sender = EmailUserSerializer(read_only=True)
-    recipient_id = serializers.IntegerField(write_only=True, required=True)
+    recipient_id = serializers.IntegerField(write_only=True, required=False)
+    group_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = EmailTransfer
-        fields = ["id", "sender", "recipient", "recipient_id", 'email', "unread", "dateSent"]
+        fields = ["id", "sender", "recipient", "group", 'email', "unread", "dateSent", "recipient_id", "group_id"]
         extra_kwargs = {
             "unread": {
                 "read_only": True
@@ -259,6 +261,12 @@ class EmailTransferSerializer(serializers.ModelSerializer):
         :param validated_data: It's the data that has been validated by the serializer
         :return: It's returning the emailTransfer object.
         """
+
+        if validated_data.get("recipient_id") is None and validated_data.get("group_id") is None:
+            raise serializers.ValidationError(
+                CustomResponses.errorResponse("Email recipient has not been specified")
+            )
+
     
 
         # It's creating a new email object and saving it to the database.
@@ -273,10 +281,14 @@ class EmailTransferSerializer(serializers.ModelSerializer):
         
         # It's creating a new draft object and saving it to the database.
         emailTransfer = EmailTransfer(
-            recipient = EmailUser.objects.get(id=validated_data.get('recipient_id')),
             sender = EmailUser.objects.get(user__id=self.context['request'].user.id),
             email = email
         )
+
+        if validated_data.get("recipient_id") is None:
+            emailTransfer.group = EmailGroup.objects.get(id=validated_data.get("group_id"))
+        else:
+            emailTransfer.recipient = EmailUser.objects.get(id=validated_data.get('recipient_id'))
 
         emailTransfer.save()
 
@@ -291,7 +303,7 @@ class InboxSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EmailTransfer
-        fields = ["id", "sender", 'email', "unread", "dateSent"]
+        fields = ["id", "sender", 'group', 'email', "unread", "dateSent"]
         extra_kwargs = {
             "unread": {
                 "read_only": True

@@ -499,6 +499,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
 
+
         unread = self.request.query_params.get("unread", None)
 
         if unread is None:
@@ -575,17 +576,21 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             junker=emailUser
         ).values_list("emailTransfer__id", flat=True))
 
+        print(EmailTransfer.objects)
+
+
+        # Get inbox
+        inbox = EmailTransfer.objects.exclude(
+            id__in=trashedEmailIDs + spamEmailIDs + junkEmailIDs,
+        ).filter(
+            Q(group__isnull=True) | Q(group__members=emailUser)
+        )
+
         
         # Filtering the emails based on the unread status.
-        if unread is None:
-            inbox = EmailTransfer.objects.exclude(
-                id__in=trashedEmailIDs + spamEmailIDs + junkEmailIDs
-            )
 
-        else:
-            inbox = EmailTransfer.objects.exclude(
-                id__in=trashedEmailIDs + spamEmailIDs + junkEmailIDs,
-            ).filter(unread=unread)
+        if unread is not None:
+            inbox = inbox.filter(unread=unread)
 
         page = self.paginate_queryset(inbox)
         
