@@ -550,8 +550,67 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             return Response(CustomResponses.errorResponse(e))
 
 
-    @action(detail=False, serializer_class=InboxSerializer)
+    @action(detail=False, serializer_class=InboxSerializer, methods=['get', 'post'])
     def inbox(self, request):
+
+        # Check if the user sends a post request and move the email to the respective table
+        if self.request.method == "POST":
+
+            try:
+
+                # Getting the email_id from the request.data and then getting the emailTransfer object
+                # from the database.
+                emailTransfer = EmailTransfer.objects.get(
+                    id=self.request.data.get("email_id")
+                )
+
+                # Getting the emailUser object from the database.
+                emailUser = EmailUser.objects.get(
+                    user__id=self.request.user.id
+                )
+
+                # The below code is a function that is used to move emails to different folders.
+                match(request.data.get("destination")):
+
+                    case "favorites":
+                        favorites = Favorites(
+                            favoriter = emailUser,
+                            emailTransfer = emailTransfer
+                        )
+
+                        favorites.save()
+
+                        return Response(
+                            CustomResponses.successResponse("Email has been added to favorites")
+                        )
+
+                    case "junk":
+                        junk = Junk(
+                            junker = emailUser,
+                            emailTransfer = emailTransfer
+                        )
+
+                        junk.save()
+
+                        return Response(
+                            CustomResponses.successResponse("Email has been added to junk")
+                        )
+
+                    case "spam":
+                        spam = Spam(
+                            spammer = emailUser,
+                            emailTransfer = emailTransfer
+                        )
+
+                        spam.save()
+
+                        return Response(
+                            CustomResponses.successResponse("Email has been added to spam")
+                        )
+
+            except Exception as e:
+                raise APIException(CustomResponses.errorResponse(e))
+
         
         # Getting the query parameter "unread" from the request.
         unread = self.request.query_params.get("unread", None)
@@ -575,8 +634,6 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         junkEmailIDs = list(Junk.objects.filter(
             junker=emailUser
         ).values_list("emailTransfer__id", flat=True))
-
-        print(EmailTransfer.objects)
 
 
         # Get inbox
@@ -656,7 +713,8 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         # Check if the user sends a post request and move the email back to inbox
         if self.request.method == "POST":
             self.create(request=request)
-            return Response(CustomResponses.successResponse("Email has been moved back to inbox"))
+            return Response(CustomResponses.successResponse("Email has been moved back to inbox")
+        )
 
         # Getting the emailUser object from the database.
         emailUser = EmailUser.objects.get(

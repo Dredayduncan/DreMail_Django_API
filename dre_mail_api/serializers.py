@@ -300,10 +300,13 @@ class EmailTransferSerializer(serializers.ModelSerializer):
 class InboxSerializer(serializers.ModelSerializer):
     email = EmailSerializer(read_only=True)
     sender = EmailUserSerializer(read_only=True)
+    group = EmailGroupSerializer(read_only=True)
+    email_id = serializers.IntegerField(required=True, write_only=True)
+    destination = serializers.ChoiceField(required=True, write_only=True, choices=['favorites', 'junk', 'spam'])
 
     class Meta:
         model = EmailTransfer
-        fields = ["id", "sender", 'group', 'email', "unread", "dateSent"]
+        fields = ["id", "sender", 'group', 'email', "unread", "dateSent", "email_id", "destination"]
         extra_kwargs = {
             "unread": {
                 "read_only": True
