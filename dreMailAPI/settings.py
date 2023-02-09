@@ -61,6 +61,9 @@ INSTALLED_APPS = [
     'dre_mail_api'
 ]
 
+AUTH_USER_MODEL = "dre_mail_api.CustomUser"
+LOGIN_REDIRECT_URL='/api/'
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(weeks=1),

@@ -1,54 +1,53 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
-
 from dre_mail_api.customResponses import CustomResponses
 from .models import *
 
 """--------------- AUTH SERIALIZERS ---------------"""
 
-class MainUserSerializer(serializers.ModelSerializer):
+class RegisterUserSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
     email = serializers.CharField(required=True)
     username = serializers.CharField(required=True)
  
     class Meta:
-        model = User
-        fields = ('id', 'first_name', 'last_name', 'username', 'password', 'email')
+        model = CustomUser
+        fields = ('id', 'first_name', 'last_name', 'username', 'password', 'email', 'avi')
         extra_kwargs = {
             'password': {"write_only": True}
         }
 
-
-# It creates a new user and a new emailUser, and then saves them both
-class EmailUserSerializer(serializers.ModelSerializer):
-    user = MainUserSerializer(read_only=False)
-
-    class Meta:
-        model = EmailUser
-        fields = ["user", "avi"]
-
     def create(self, validated_data):
         """Create and return a new user."""
 
-        user = User(
-            email = validated_data['user']['email'],
-            first_name = validated_data['user']['first_name'],
-            last_name = validated_data['user']['last_name'],
-            username = validated_data['user']['username']
-        )
+        try:
 
-        user.set_password(validated_data['user']['password'])
-        user.save()
+            user = CustomUser(
+                email = validated_data['email'],
+                first_name = validated_data['first_name'],
+                last_name = validated_data['last_name'],
+                username = validated_data['username']
+            )
 
-        emailUser = EmailUser(
-            avi = validated_data['avi'],
-            user = user
-        )
+            user.set_password(validated_data['password'])
+            user.avi = validated_data['avi']
+            user.save()
 
-        emailUser.save()
+            return user
 
-        return emailUser
+        except Exception as e:
+            raise serializers.ValidationError(
+                CustomResponses.errorResponse("A user with this email or username already exists")
+            )
+
+       
+
+
+# It creates a new user and a new User, and then saves them both
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'first_name', 'last_name', 'username', 'email', "avi"]
 
 # It's a serializer that validates the old password, the new password, and the confirmation of the new
 # password
@@ -59,7 +58,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
     old_password = serializers.CharField(write_only=True, required=True)
  
     class Meta:
-        model = User
+        model = CustomUser
         fields = ['old_password', 'new_password', 'confirm_password']
 
     def validate(self, attrs):
@@ -104,13 +103,13 @@ class UpdateUserSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=True)
 
     class Meta:
-        model = User
+        model = CustomUser
         fields = ('username', 'first_name', 'last_name', 'email')
 
 
     def validate_email(self, value):
         user = self.context['request'].user
-        if User.objects.exclude(id=user.id).filter(email=value).exists():
+        if CustomUser.objects.exclude(id=user.id).filter(email=value).exists():
             raise serializers.ValidationError(
                 CustomResponses.errorResponse("This email is already in use.")
             )
@@ -118,7 +117,7 @@ class UpdateUserSerializer(serializers.ModelSerializer):
 
     def validate_username(self, value):
         user = self.context['request'].user
-        if User.objects.exclude(id=user.id).filter(username=value).exists():
+        if CustomUser.objects.exclude(id=user.id).filter(username=value).exists():
             raise serializers.ValidationError(
                 CustomResponses.errorResponse("This username is already in use.")
             )
@@ -140,7 +139,7 @@ class UpdateUserSerializer(serializers.ModelSerializer):
 class UpdateAVISerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = EmailUser
+        model = CustomUser
         fields = ['avi']
 
     def update(self, instance, validated_data):
@@ -165,7 +164,7 @@ class EmailGroupSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
 
-        currentUser = EmailUser.objects.get(user__id=self.context['request'].user.id)
+        currentUser = CustomUser.objects.get(id=self.context['request'].user.id)
 
         #  provide the info for the group
         emailGroup = EmailGroup(
@@ -189,7 +188,7 @@ class EmailGroupMemberSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(write_only=True)
     
     class Meta:
-        model = EmailUser
+        model = CustomUser
         fields = ['id']
 
 
@@ -208,9 +207,9 @@ class EmailSerializer(serializers.ModelSerializer):
 
 class EmailTransferSerializer(serializers.ModelSerializer):
     email = EmailSerializer()
-    recipient = EmailUserSerializer(read_only=True)
+    recipient = UserSerializer(read_only=True)
     group = EmailGroupSerializer(read_only=True)
-    sender = EmailUserSerializer(read_only=True)
+    sender = UserSerializer(read_only=True)
     recipient_id = serializers.IntegerField(write_only=True, required=False)
     group_id = serializers.IntegerField(write_only=True, required=False)
 
@@ -238,11 +237,11 @@ class EmailTransferSerializer(serializers.ModelSerializer):
             
             user = self.context['request'].user
 
-            if EmailUser.objects.filter(id=value).exists() == False:
+            if CustomUser.objects.filter(id=value).exists() == False:
                 raise CustomResponses.errorResponse("User with specified ID does not exist.")
 
 
-            if EmailUser.objects.get(user__id=user.id) == EmailUser.objects.get(id=value):
+            if CustomUser.objects.get(id=user.id) == CustomUser.objects.get(id=value):
                 raise CustomResponses.errorResponse("You cannot send an email to yourself")
 
             
@@ -281,14 +280,14 @@ class EmailTransferSerializer(serializers.ModelSerializer):
         
         # It's creating a new draft object and saving it to the database.
         emailTransfer = EmailTransfer(
-            sender = EmailUser.objects.get(user__id=self.context['request'].user.id),
+            sender = CustomUser.objects.get(id=self.context['request'].user.id),
             email = email
         )
 
         if validated_data.get("recipient_id") is None:
             emailTransfer.group = EmailGroup.objects.get(id=validated_data.get("group_id"))
         else:
-            emailTransfer.recipient = EmailUser.objects.get(id=validated_data.get('recipient_id'))
+            emailTransfer.recipient = CustomUser.objects.get(id=validated_data.get('recipient_id'))
 
         emailTransfer.save()
 
@@ -296,10 +295,10 @@ class EmailTransferSerializer(serializers.ModelSerializer):
 
 
 # The InboxSerializer class is a ModelSerializer that serializes the EmailTransfer model 
-# for the inbox. It has a nested EmailSerializer and EmailUserSerializer
+# for the inbox. It has a nested EmailSerializer and UserSerializer
 class InboxSerializer(serializers.ModelSerializer):
     email = EmailSerializer(read_only=True)
-    sender = EmailUserSerializer(read_only=True)
+    sender = UserSerializer(read_only=True)
     group = EmailGroupSerializer(read_only=True)
     email_id = serializers.IntegerField(required=True, write_only=True)
     destination = serializers.ChoiceField(required=True, write_only=True, choices=['favorites', 'junk', 'spam'])
@@ -372,28 +371,28 @@ class EmailActionSerializer(serializers.ModelSerializer):
             if endpointType == "trash":
        
                 return Trash.objects.get(
-                    deleter=EmailUser.objects.get(user__id=self.context['request'].user.id),
+                    deleter=CustomUser.objects.get(id=self.context['request'].user.id),
                     emailTransfer=EmailTransfer.objects.get(id=validated_data.get("email_id"))
                 ).delete()
 
             # Deleting the email from spam.
             elif endpointType == "spam":
                 return Spam.objects.get(
-                    spammer=EmailUser.objects.get(user__id=self.context['request'].user.id),
+                    spammer=CustomUser.objects.get(id=self.context['request'].user.id),
                     emailTransfer=EmailTransfer.objects.get(id=validated_data.get("email_id"))
                 ).delete()
                 
             # Deleting the email from junk.
             elif endpointType == 'junk':
                 return Junk.objects.get(
-                    junker=EmailUser.objects.get(user__id=self.context['request'].user.id),
+                    junker=CustomUser.objects.get(id=self.context['request'].user.id),
                     emailTransfer=EmailTransfer.objects.get(id=validated_data.get("email_id"))
                 ).delete()
 
             # Deleting the email from favorite.
             else:
                 return Favorites.objects.get(
-                    favoriter=EmailUser.objects.get(user__id=self.context['request'].user.id),
+                    favoriter=CustomUser.objects.get(id=self.context['request'].user.id),
                     emailTransfer=EmailTransfer.objects.get(id=validated_data.get("email_id"))
                 ).delete()
 
@@ -403,10 +402,10 @@ class EmailActionSerializer(serializers.ModelSerializer):
 
 
 # The SentEmailSerializer class is a serializer for the EmailTransfer model. It has a nested
-# serializer for the Email model and a nested serializer for the EmailUser model
+# serializer for the Email model and a nested serializer for the User model
 class SentEmailSerializer(serializers.ModelSerializer):
     email = EmailSerializer()
-    recipient = EmailUserSerializer(read_only=True)
+    recipient = UserSerializer(read_only=True)
 
     class Meta:
         model = EmailTransfer
@@ -447,7 +446,7 @@ class DraftSerializer(serializers.ModelSerializer):
         
         # It's creating a new draft object and saving it to the database.
         draft = Drafts(
-            drafter = EmailUser.objects.get(user__id=self.context['request'].user.id),
+            drafter = CustomUser.objects.get(id=self.context['request'].user.id),
             email = email
         )
 

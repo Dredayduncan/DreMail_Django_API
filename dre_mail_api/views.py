@@ -19,14 +19,15 @@ from django.db.models import Q
 """---------------AUTH ENDPOINTS-----------------"""
 # > This class is used to create a user
 class RegisterUserView(generics.CreateAPIView):
+    queryset = CustomUser.objects.all()
     permission_classes = [permissions.AllowAny]
-    serializer_class = EmailUserSerializer
+    serializer_class = RegisterUserSerializer
     
 
 
 # This view will allow authenticated users to update their profile.
 class UpdateProfileView(generics.UpdateAPIView):
-    queryset = User.objects.all()
+    queryset = CustomUser.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UpdateUserSerializer
 
@@ -37,11 +38,11 @@ class UpdateProfileView(generics.UpdateAPIView):
         try:
 
             if not userID:
-                return User.objects.get(id=requestID)
+                return CustomUser.objects.get(id=requestID)
 
-            return User.objects.get(id=userID)
+            return CustomUser.objects.get(id=userID)
             
-        except User.DoesNotExist:
+        except CustomUser.DoesNotExist:
             return None
 
     # Retrieve a user's details
@@ -72,7 +73,7 @@ class UpdateProfileView(generics.UpdateAPIView):
             # This is checking if the user is a superuser or if the user is trying to access their own
             # data.
         
-            if User.objects.get(id=request.user.id).is_superuser == False \
+            if CustomUser.objects.get(id=request.user.id).is_superuser == False \
                 and userID is not None \
                 and str(request.user.id) != userID:
                 return Response(
@@ -125,11 +126,11 @@ class ChangePasswordView(generics.UpdateAPIView):
         try:
 
             if not userID:
-                return User.objects.get(id=requestID)
+                return CustomUser.objects.get(id=requestID)
 
-            return User.objects.get(id=userID)
+            return CustomUser.objects.get(id=userID)
             
-        except User.DoesNotExist:
+        except CustomUser.DoesNotExist:
             return None
 
     # Update a user's details
@@ -142,7 +143,7 @@ class ChangePasswordView(generics.UpdateAPIView):
 
             # This is checking if the user is a superuser or if the user is trying to access their own
             # data.
-            if User.objects.get(id=request.user.id).is_superuser == False \
+            if CustomUser.objects.get(id=request.user.id).is_superuser == False \
                 and userID is not None \
                 and str(request.user.id) != userID:
                 return Response(
@@ -204,7 +205,7 @@ class LogoutView(APIView):
 
 # This class is used to update the AVI of a user
 class UpdateAVIView(generics.UpdateAPIView):
-    queryset = EmailUser.objects.all()
+    queryset = CustomUser.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = UpdateAVISerializer
 
@@ -215,11 +216,11 @@ class UpdateAVIView(generics.UpdateAPIView):
         try:
 
             if not userID:
-                return EmailUser.objects.get(user__id=requestID)
+                return CustomUser.objects.get(id=requestID)
 
-            return EmailUser.objects.get(user__id=userID)
+            return CustomUser.objects.get(id=userID)
             
-        except EmailUser.DoesNotExist:
+        except CustomUser.DoesNotExist:
             return None
 
     # Update a user's details
@@ -232,7 +233,7 @@ class UpdateAVIView(generics.UpdateAPIView):
 
             # This is checking if the user is a superuser or if the user is trying to access their own
             # data.
-            if User.objects.get(id=request.user.id).is_superuser == False \
+            if CustomUser.objects.get(id=request.user.id).is_superuser == False \
                 and userID is not None \
                 and str(request.user.id) != userID:
                 return Response(
@@ -270,10 +271,10 @@ class UserView(generics.ListAPIView):
 
     # Add permission to check if a user is authenticated 
     permission_classes = [permissions.IsAuthenticated]
-    queryset = EmailUser.objects.all()
-    serializer_class = EmailUserSerializer
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['user__id']
+    filterset_fields = ['id']
     search_fields = ['user__first_name', 'user__last_name', 'user__username', 'user__email']
 
 
@@ -281,7 +282,7 @@ class UserView(generics.ListAPIView):
 class UserDetailView(generics.RetrieveDestroyAPIView):
     # add permission to check if user is authenticated
     permission_classes = [permissions.IsAuthenticated]
-    serializer_class = EmailUserSerializer
+    serializer_class = UserSerializer
 
     def get_object(self, userID, requestID):
         '''
@@ -290,11 +291,11 @@ class UserDetailView(generics.RetrieveDestroyAPIView):
         try:
 
             if not userID:
-                return EmailUser.objects.get(user__id=requestID)
+                return CustomUser.objects.get(id=requestID)
 
-            return EmailUser.objects.get(user__id=userID)
+            return CustomUser.objects.get(id=userID)
             
-        except EmailUser.DoesNotExist:
+        except CustomUser.DoesNotExist:
             return None
 
     # Retrieve a user's details
@@ -311,7 +312,7 @@ class UserDetailView(generics.RetrieveDestroyAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = EmailUserSerializer(userInstance)
+        serializer = UserSerializer(userInstance)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -326,7 +327,7 @@ class UserDetailView(generics.RetrieveDestroyAPIView):
 
             # This is checking if the user is a superuser or if the user is trying to access their own
             # data.
-            if User.objects.get(id=request.user.id).is_superuser == False \
+            if CustomUser.objects.get(id=request.user.id).is_superuser == False \
                 and userID is not None \
                 and str(request.user.id) != userID:
                 return Response(
@@ -379,14 +380,14 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
 
-        currentUser = EmailUser.objects.get(user__id=self.request.user.id)
+        currentUser = CustomUser.objects.get(id=self.request.user.id)
 
         return EmailGroup.objects.filter(
             Q(creator = currentUser) | Q(members=currentUser)
         ).distinct()
 
 
-    @action(detail=True, serializer_class=EmailUserSerializer, search_fields=['members__user__username'])
+    @action(detail=True, serializer_class=UserSerializer, search_fields=['members__user__username'])
     def members(self, request, pk=None):
 
         groupMembers = self.get_object().members.all()
@@ -405,7 +406,7 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
 
         try:
 
-            self.get_object().members.add(EmailUser.objects.get(user__id=request.data.get("id")))
+            self.get_object().members.add(CustomUser.objects.get(id=request.data.get("id")))
 
             return Response(
                 CustomResponses.successResponse("Member has been added successfully")
@@ -424,8 +425,8 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
 
                 # leave the group
                 self.get_object().members.remove(
-                    EmailUser.objects.get(
-                        user__id=self.request.user.id
+                    CustomUser.objects.get(
+                        id=self.request.user.id
                     )
                 )
 
@@ -436,15 +437,15 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
 
             # revoke access if the person trying to remove the member is 
             # not the creator of the group or the member themselves
-            if self.get_object().creator != EmailUser.objects.get(user__id=self.request.user.id):
+            if self.get_object().creator != CustomUser.objects.get(id=self.request.user.id):
                 return Response(
                 CustomResponses.errorResponse("You do not have access to perform this action"),
                 status=status.HTTP_400_BAD_REQUEST
             )
 
             # Get the user to remove and remove them from the group
-            userToRemove = EmailUser.objects.get(
-                user__id=request.data.get("id")
+            userToRemove = CustomUser.objects.get(
+                id=request.data.get("id")
             )
 
             self.get_object().members.remove(
@@ -522,13 +523,13 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         # Checking if the sender of the email is the same as the user who is trying to delete the
         # email. If it is, it will return an error message.
         try:
-            if self.get_object().sender == EmailUser.objects.get(user__id=self.request.user.id):
+            if self.get_object().sender == CustomUser.objects.get(id=self.request.user.id):
                 return Response(CustomResponses.errorResponse("You are unable to delete an email you sent"), status=status.HTTP_400_BAD_REQUEST)
 
             # Check if the email is in trash
             if Trash.objects.filter(
                     emailTransfer=self.get_object(), 
-                    deleter=EmailUser.objects.get(user__id=self.request.user.id)
+                    deleter=CustomUser.objects.get(id=self.request.user.id)
                 ).exists():
 
                 # permanently delete the email
@@ -539,7 +540,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
             # Move email to deleted Emails (trash)
             deleteEmail = Trash(
-                deleter = EmailUser.objects.get(user__id=self.request.user.id),
+                deleter = CustomUser.objects.get(id=self.request.user.id),
                 emailTransfer = self.get_object()
             )
 
@@ -564,9 +565,9 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
                     id=self.request.data.get("email_id")
                 )
 
-                # Getting the emailUser object from the database.
-                emailUser = EmailUser.objects.get(
-                    user__id=self.request.user.id
+                # Getting the User object from the database.
+                User = CustomUser.objects.get(
+                    id=self.request.user.id
                 )
 
                 # The below code is a function that is used to move emails to different folders.
@@ -574,7 +575,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
                     case "favorites":
                         favorites = Favorites(
-                            favoriter = emailUser,
+                            favoriter = User,
                             emailTransfer = emailTransfer
                         )
 
@@ -586,7 +587,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
                     case "junk":
                         junk = Junk(
-                            junker = emailUser,
+                            junker = User,
                             emailTransfer = emailTransfer
                         )
 
@@ -598,7 +599,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
                     case "spam":
                         spam = Spam(
-                            spammer = emailUser,
+                            spammer = User,
                             emailTransfer = emailTransfer
                         )
 
@@ -615,24 +616,24 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         # Getting the query parameter "unread" from the request.
         unread = self.request.query_params.get("unread", None)
 
-        # Getting the emailUser object from the database.
-        emailUser = EmailUser.objects.get(
-            user__id=self.request.user.id
+        # Getting the User object from the database.
+        User = CustomUser.objects.get(
+            id=self.request.user.id
         )
 
         # Getting all the deleted emails ids of the user.
         trashedEmailIDs = list(Trash.objects.filter(
-            deleter=emailUser
+            deleter=User
         ).values_list("emailTransfer__id", flat=True))
 
        # Filtering the spammer and getting the values of the emailTransfer__id.
         spamEmailIDs = list(Spam.objects.filter(
-            spammer=emailUser
+            spammer=User
         ).values_list("emailTransfer__id", flat=True))
 
-        # Filtering the Spam model for the emailUser and then returning the emailTransfer__id
+        # Filtering the Spam model for the User and then returning the emailTransfer__id
         junkEmailIDs = list(Junk.objects.filter(
-            junker=emailUser
+            junker=User
         ).values_list("emailTransfer__id", flat=True))
 
 
@@ -640,7 +641,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         inbox = EmailTransfer.objects.exclude(
             id__in=trashedEmailIDs + spamEmailIDs + junkEmailIDs,
         ).filter(
-            Q(group__isnull=True) | Q(group__members=emailUser)
+            Q(group__isnull=True) | Q(group__members=User)
         )
 
         
@@ -690,12 +691,12 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
     @action(detail=False, serializer_class=SentEmailSerializer)
     def sent_emails(self, request):
 
-        # Getting the emailUser object from the database.
-        emailUser = EmailUser.objects.get(
-            user__id=self.request.user.id
+        # Getting the User object from the database.
+        User = CustomUser.objects.get(
+            id=self.request.user.id
         )
         
-        sentEmails = EmailTransfer.objects.filter(sender=emailUser)
+        sentEmails = EmailTransfer.objects.filter(sender=User)
 
         page = self.paginate_queryset(sentEmails)
         
@@ -716,12 +717,12 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             return Response(CustomResponses.successResponse("Email has been moved back to inbox")
         )
 
-        # Getting the emailUser object from the database.
-        emailUser = EmailUser.objects.get(
-            user__id=self.request.user.id
+        # Getting the User object from the database.
+        User = CustomUser.objects.get(
+            id=self.request.user.id
         )
         
-        trash = Trash.objects.filter(deleter=emailUser)
+        trash = Trash.objects.filter(deleter=User)
 
         page = self.paginate_queryset(trash)
         
@@ -741,12 +742,12 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             self.create(request=request)
             return Response(CustomResponses.successResponse("Email has been moved back to inbox"))
 
-        # Getting the emailUser object from the database.
-        emailUser = EmailUser.objects.get(
-            user__id=self.request.user.id
+        # Getting the User object from the database.
+        User = CustomUser.objects.get(
+            id=self.request.user.id
         )
         
-        spam = Spam.objects.filter(spammer=emailUser)
+        spam = Spam.objects.filter(spammer=User)
 
         page = self.paginate_queryset(spam)
         
@@ -767,12 +768,12 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             self.create(request=request)
             return Response(CustomResponses.successResponse("Email has been moved back to inbox"))
 
-        # Getting the emailUser object from the database.
-        emailUser = EmailUser.objects.get(
-            user__id=self.request.user.id
+        # Getting the User object from the database.
+        User = CustomUser.objects.get(
+            id=self.request.user.id
         )
         
-        junk = Junk.objects.filter(junker=emailUser)
+        junk = Junk.objects.filter(junker=User)
 
         page = self.paginate_queryset(junk)
         
@@ -792,12 +793,12 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             self.create(request=request)
             return Response(CustomResponses.successResponse("Email has been moved back to inbox"))
 
-        # Getting the emailUser object from the database.
-        emailUser = EmailUser.objects.get(
-            user__id=self.request.user.id
+        # Getting the User object from the database.
+        User = CustomUser.objects.get(
+            id=self.request.user.id
         )
         
-        favorites = Favorites.objects.filter(favoriter=emailUser)
+        favorites = Favorites.objects.filter(favoriter=User)
 
         page = self.paginate_queryset(favorites)
         
