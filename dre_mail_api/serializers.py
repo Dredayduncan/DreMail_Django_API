@@ -161,20 +161,35 @@ class EmailGroupSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = EmailGroup
-        fields = "__all__"
+        fields = ['id', 'name', 'description']
 
-class GroupMembersSerializer(serializers.ModelSerializer):
-    user = EmailUserSerializer()
-    
-    class Meta:
-        model = EmailGroupMembers
-        fields = ["user"]
+    def create(self, validated_data):
+
+        currentUser = EmailUser.objects.get(user__id=self.context['request'].user.id)
+
+        #  provide the info for the group
+        emailGroup = EmailGroup(
+            name = validated_data.get("name"),
+            description = validated_data.get("description"),
+            creator = currentUser
+        )
+
+        # create the group
+        emailGroup.save()
+
+        # Add the creator as a member
+        emailGroup.members.add(currentUser)
+
+        
+
+        return emailGroup
+
 
 class EmailGroupMemberSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(write_only=True)
     
     class Meta:
-        model = EmailGroupMembers
+        model = EmailUser
         fields = ['id']
 
 

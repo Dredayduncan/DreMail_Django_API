@@ -4,7 +4,6 @@ from .models import *
 # Register your models here.
 admin.site.register(EmailUser)
 admin.site.register(EmailGroup)
-admin.site.register(EmailGroupMembers)
 admin.site.register(Email)
 admin.site.register(EmailTransfer)
 admin.site.register(Favorites)

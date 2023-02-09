@@ -11,7 +11,7 @@ from .models import *
 from rest_framework_simplejwt.tokens import RefreshToken
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
-
+from django.db.models import Q
 
 
 # Create your views here.
@@ -361,21 +361,43 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
     queryset = EmailGroup.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = EmailGroupSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name'] 
 
-    @action(detail=True, serializer_class=GroupMembersSerializer)
+
+    def destroy(self, request, *args, **kwargs):
+
+        if self.get_object().creator.id != self.request.user.id:
+            return Response(
+                CustomResponses.errorResponse("You do not have access to perform this action"),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+        return super().destroy(request, *args, **kwargs)
+
+
+    def get_queryset(self):
+
+        currentUser = EmailUser.objects.get(user__id=self.request.user.id)
+
+        return EmailGroup.objects.filter(
+            Q(creator = currentUser) | Q(members=currentUser)
+        ).distinct()
+
+
+    @action(detail=True, serializer_class=EmailUserSerializer, search_fields=['members__user__username'])
     def members(self, request, pk=None):
 
-        emailGroupMembers = EmailGroupMembers.objects.filter(
-            group = self.get_object(),
-        )
+        groupMembers = self.get_object().members.all()
 
-        page = self.paginate_queryset(emailGroupMembers)
+        page = self.paginate_queryset(groupMembers)
     
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(emailGroupMembers, many=True)
+        serializer = self.get_serializer(groupMembers, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'], serializer_class=EmailGroupMemberSerializer)
@@ -383,12 +405,7 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
 
         try:
 
-            emailGroupMember = EmailGroupMembers(
-                group = self.get_object(),
-                user = EmailUser.objects.get(user__id=request.data.get("id"))
-            )
-
-            emailGroupMember.save()
+            self.get_object().members.add(EmailUser.objects.get(user__id=request.data.get("id")))
 
             return Response(
                 CustomResponses.successResponse("Member has been added successfully")
@@ -402,15 +419,41 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
 
         try:
 
-            emailGroupMember = EmailGroupMembers.objects.get(
-                group=self.get_object(),
-                user=EmailUser.objects.get(user__id=request.data.get("id"))
+            # check if the user is removing themselves by checking if no id was submitted
+            if request.data.get("id") is None or request.data.get("id") == "":
+
+                # leave the group
+                self.get_object().members.remove(
+                    EmailUser.objects.get(
+                        user__id=self.request.user.id
+                    )
+                )
+
+                return Response(
+                    CustomResponses.successResponse("You have successfully left the group")
+                )
+            
+
+            # revoke access if the person trying to remove the member is 
+            # not the creator of the group or the member themselves
+            if self.get_object().creator != EmailUser.objects.get(user__id=self.request.user.id):
+                return Response(
+                CustomResponses.errorResponse("You do not have access to perform this action"),
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-            emailGroupMember.delete()
+            # Get the user to remove and remove them from the group
+            userToRemove = EmailUser.objects.get(
+                user__id=request.data.get("id")
+            )
+
+            self.get_object().members.remove(
+                userToRemove
+            )
 
             return Response(
-                CustomResponses.successResponse("Member has been removed successfully")
+                CustomResponses.successResponse("Member has been removed successfully"),
+                status=status.HTTP_200_OK
             )
 
         except Exception as e:
