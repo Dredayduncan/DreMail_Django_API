@@ -31,6 +31,10 @@ ALLOWED_HOSTS = []
 
 # Application definition
 REST_FRAMEWORK = {
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning',
+    'DEFAULT_VERSION': "v1.0",
+    "ALLOWED_VERSIONS": {"v1.0", "v1.1", "v2.0"},
+    'VERSION_PARAM': "version",
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated', 
      ],
@@ -44,6 +48,16 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER':'rest_framework.views.exception_handler',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/min',
+        'user': '10/min'
+    }
+
 }
 
 

@@ -26,91 +26,98 @@ class RegisterUserView(generics.CreateAPIView):
 
 
 # This view will allow authenticated users to update their profile.
-class UpdateProfileView(generics.UpdateAPIView):
-    queryset = CustomUser.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = UpdateUserSerializer
+# class UpdateProfileView(generics.RetrieveUpdateAPIView):
+#     queryset = CustomUser.objects.all()
+#     permission_classes = [permissions.IsAuthenticated]
+#     serializer_class = UserSerializer
 
-    def get_object(self, userID, requestID):
-        '''
-        Helper method to get the object with given userID
-        '''
-        try:
+    # def get_object(self, userID, requestID):
+    #     '''
+    #     Helper method to get the object with given userID
+    #     '''
+    #     try:
 
-            if not userID:
-                return CustomUser.objects.get(id=requestID)
+    #         if not userID:
+    #             return CustomUser.objects.get(id=requestID)
 
-            return CustomUser.objects.get(id=userID)
+    #         return CustomUser.objects.get(id=userID)
             
-        except CustomUser.DoesNotExist:
-            return None
+    #     except CustomUser.DoesNotExist:
+    #         return None
 
     # Retrieve a user's details
-    def get(self, request, userID=None, *args, **kwargs):
-        '''
-        Retrieves the Todo with given userID
-        '''
+    # def get(self, request, userID=None, *args, **kwargs):
+    #     '''
+    #     Retrieves the Todo with given userID
+    #     '''
      
-        userInstance = self.get_object(userID, request.user.id)
+    #     userInstance = self.get_object(userID, request.user.id)
 
-        if not userInstance:
-            return Response(
-                CustomResponses.errorResponse("User with specified ID does not exist."),
-                status=status.HTTP_400_BAD_REQUEST
-            )
+    #     if not userInstance:
+    #         return Response(
+    #             CustomResponses.errorResponse("User with specified ID does not exist."),
+    #             status=status.HTTP_400_BAD_REQUEST
+    #         )
 
-        serializer = UpdateUserSerializer(userInstance)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    #     serializer = UpdateUserSerializer(userInstance)
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
 
-    # Update a user's details
-    def update(self, request, userID=None, *args, **kwargs):
-        '''
-        Updates the todo item with given userID if exists
-        '''
-
-        try:
-
-            # This is checking if the user is a superuser or if the user is trying to access their own
-            # data.
+    # # Update a user's details
+    # def update(self, request, userID=None, *args, **kwargs):
+    #     '''
+    #     Updates the todo item with given userID if exists
+    #     '''
         
-            if CustomUser.objects.get(id=request.user.id).is_superuser == False \
-                and userID is not None \
-                and str(request.user.id) != userID:
-                return Response(
-                    CustomResponses.errorResponse("You do not have access to perform this action"),
-                    status=status.HTTP_403_FORBIDDEN
-                )
 
-            # This is checking if the user is a superuser or if the user is trying to access their own
-            # data.
-            self.object = self.get_object(userID, request.user.id)
+    #     try:
 
-            if not self.object:
-                return Response(
-                    CustomResponses.errorResponse("User with specified ID does not exist."),
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+    #         # This is checking if the user is a superuser or if the user is trying to access their own
+    #         # data.
+        
+    #         if CustomUser.objects.get(id=request.user.id).is_superuser == False \
+    #             and userID is not None \
+    #             and str(request.user.id) != userID:
+    #             return Response(
+    #                 CustomResponses.errorResponse("You do not have access to perform this action"),
+    #                 status=status.HTTP_403_FORBIDDEN
+    #             )
+
+    #         # This is checking if the user is a superuser or if the user is trying to access their own
+    #         # data.
+    #         self.object = self.get_object(userID, request.user.id)
+
+    #         if not self.object:
+    #             return Response(
+    #                 CustomResponses.errorResponse("User with specified ID does not exist."),
+    #                 status=status.HTTP_400_BAD_REQUEST
+    #             )
                 
-            data = {
-                'first_name': request.data.get('first_name'),
-                'last_name': request.data.get('last_name'),
-                "email": request.data.get("email"),
-                "username": request.data.get("username"),
-                "avi": request.data.get("avi")
-            }
+    #         data = {
+    #             'first_name': request.data.get('first_name'),
+    #             'last_name': request.data.get('last_name'),
+    #             "email": request.data.get("email"),
+    #             "username": request.data.get("username"),
+    #             "avi": request.data.get("avi")
+    #         }
 
-            serializer = self.get_serializer(data=data)
+    #         serializer = self.get_serializer(data=request.data)
 
-            if serializer.is_valid():
+    #         if serializer.is_valid():
                 
-                serializer.update(instance=self.object, validated_data=data)
+    #             serializer.update(instance=self.object, validated_data=data)
     
-                return Response(serializer.data, status=status.HTTP_200_OK)
+    #             return Response(
+    #                 CustomResponses.successResponse(serializer.data), 
+    #                 status=status.HTTP_200_OK
+    #             )
 
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    #         return Response(
+    #             CustomResponses.errorResponse(serializer.errors), 
+    #             status=status.HTTP_400_BAD_REQUEST
+    #         )
 
-        except Exception as e:
-            raise APIException(CustomResponses.errorResponse(e))
+    #     except Exception as e:
+    #         raise APIException(CustomResponses.errorResponse(e))
 
 
 # It's a class that inherits from the UpdateAPIView class and it's used to update a user's password
@@ -203,71 +210,10 @@ class LogoutView(APIView):
 
 """-------------------- USER ENDPOINTS --------------------"""
 
-# This class is used to update the AVI of a user
-class UpdateAVIView(generics.UpdateAPIView):
-    queryset = CustomUser.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = UpdateAVISerializer
 
-    def get_object(self, userID, requestID):
-        '''
-        Helper method to get the object with given userID
-        '''
-        try:
-
-            if not userID:
-                return CustomUser.objects.get(id=requestID)
-
-            return CustomUser.objects.get(id=userID)
-            
-        except CustomUser.DoesNotExist:
-            return None
-
-    # Update a user's details
-    def update(self, request, userID=None, *args, **kwargs):
-        '''
-        Updates the todo item with given userID if exists
-        '''
-
-        try:
-
-            # This is checking if the user is a superuser or if the user is trying to access their own
-            # data.
-            if CustomUser.objects.get(id=request.user.id).is_superuser == False \
-                and userID is not None \
-                and str(request.user.id) != userID:
-                return Response(
-                    CustomResponses.errorResponse("You do not have access to perform this action"),
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
-            # This is checking if the user is a superuser or if the user is trying to access their own
-            # data.
-            self.object = self.get_object(userID, request.user.id)
-
-            if not self.object:
-                return Response(
-                    CustomResponses.errorResponse("User with specified ID does not exist."),
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-                
-        
-            serializer = self.get_serializer(data=request.data)
-
-            if serializer.is_valid():
-                
-                serializer.update(instance=self.object, validated_data=request.data)
-    
-                return Response(CustomResponses.successResponse("Successfully updated the AVI"), status=status.HTTP_200_OK)
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        except Exception as e:
-            raise APIException(CustomResponses.errorResponse(e))
-
-# This class is a ListAPIView that returns a list of all users, and allows you to filter by user id,
-# first name, last name, username, and email
-class UserView(generics.ListAPIView):
+# This model view set comprises all the actions that can be taken towards a user including
+# retrieving their information, deleting their account and updating their account.
+class UserViewSet(viewsets.ModelViewSet):
 
     # Add permission to check if a user is authenticated 
     permission_classes = [permissions.IsAuthenticated]
@@ -276,84 +222,29 @@ class UserView(generics.ListAPIView):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['id']
     search_fields = ['user__first_name', 'user__last_name', 'user__username', 'user__email']
+    http_method_names = ['get', 'delete', 'patch']
 
+    def destroy(self, request, *args, **kwargs):
 
-# This class is used to retrieve and delete a user
-class UserDetailView(generics.RetrieveDestroyAPIView):
-    # add permission to check if user is authenticated
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = UserSerializer
-
-    def get_object(self, userID, requestID):
-        '''
-        Helper method to get the object with given userID
-        '''
-        try:
-
-            if not userID:
-                return CustomUser.objects.get(id=requestID)
-
-            return CustomUser.objects.get(id=userID)
-            
-        except CustomUser.DoesNotExist:
-            return None
-
-    # Retrieve a user's details
-    def get(self, request, userID=None, *args, **kwargs):
-        '''
-        Retrieves the Todo with given userID
-        '''
-     
-        userInstance = self.get_object(userID, request.user.id)
-
-        if not userInstance:
+        # Only allow users to delete their own accounts
+        if self.request.user.id != self.get_object().id:
             return Response(
-                CustomResponses.errorResponse("User with specified ID does not exist."),
-                status=status.HTTP_400_BAD_REQUEST
+                CustomResponses.errorResponse("You do not have access to perform this action"),
+                status=status.HTTP_403_FORBIDDEN
             )
 
-        serializer = UserSerializer(userInstance)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return super().destroy(request, *args, **kwargs)
 
+    def partial_update(self, request, *args, **kwargs):
 
-    # Delete a user
-    def delete(self, request, userID=None, *args, **kwargs):
-        '''
-        Deletes the user with given id if exists
-        '''
-
-        try:
-            userInstance = self.get_object(userID, request.user.id)
-
-            # This is checking if the user is a superuser or if the user is trying to access their own
-            # data.
-            if CustomUser.objects.get(id=request.user.id).is_superuser == False \
-                and userID is not None \
-                and str(request.user.id) != userID:
-                return Response(
-                    CustomResponses.errorResponse("You do not have access to perform this action"),
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
-            # This is checking if the user exists. If the user does not exist, it will return an error
-            # message.
-            if not userInstance:
-                return Response(
-                    CustomResponses.errorResponse("User with specified ID does not exist."),  
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            
-            user = userInstance.user
-            userInstance.delete()
-            user.delete()
-            return Response(CustomResponses.successResponse("User has been deleted."), 
-                status=status.HTTP_200_OK
+        # Only allow users to update their own accounts
+        if self.request.user.id != self.get_object().id:
+            return Response(
+                CustomResponses.errorResponse("You do not have access to perform this action"),
+                status=status.HTTP_403_FORBIDDEN
             )
 
-        except Exception as e:
-            raise APIException(CustomResponses.errorResponse(e))
-
+        return super().partial_update(request, *args, **kwargs)
 
 
 """--------------- EMAIL GROUP ENDPOINTS ---------------"""
@@ -616,24 +507,24 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         # Getting the query parameter "unread" from the request.
         unread = self.request.query_params.get("unread", None)
 
-        # Getting the User object from the database.
-        User = CustomUser.objects.get(
+        # Getting the user object from the database.
+        user = CustomUser.objects.get(
             id=self.request.user.id
         )
 
         # Getting all the deleted emails ids of the user.
         trashedEmailIDs = list(Trash.objects.filter(
-            deleter=User
+            deleter=user
         ).values_list("emailTransfer__id", flat=True))
 
        # Filtering the spammer and getting the values of the emailTransfer__id.
         spamEmailIDs = list(Spam.objects.filter(
-            spammer=User
+            spammer=user
         ).values_list("emailTransfer__id", flat=True))
 
-        # Filtering the Spam model for the User and then returning the emailTransfer__id
+        # Filtering the Spam model for the user and then returning the emailTransfer__id
         junkEmailIDs = list(Junk.objects.filter(
-            junker=User
+            junker=user
         ).values_list("emailTransfer__id", flat=True))
 
 
@@ -641,7 +532,8 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         inbox = EmailTransfer.objects.exclude(
             id__in=trashedEmailIDs + spamEmailIDs + junkEmailIDs,
         ).filter(
-            Q(group__isnull=True) | Q(group__members=User)
+            Q(group__isnull=True) | Q(group__members=user),
+            recipient=user
         )
 
         
@@ -661,7 +553,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
 
     @action(detail=False, serializer_class=ReadStatusUpdateSerializers, methods=['post'])
-    def read_status(self, request):
+    def update_read_status(self, request):
 
         try:
 
@@ -681,7 +573,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_200_OK
                 )
 
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(CustomResponses.errorResponse(serializer.errors), status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             raise APIException(CustomResponses.errorResponse(e))
@@ -692,11 +584,11 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
     def sent_emails(self, request):
 
         # Getting the User object from the database.
-        User = CustomUser.objects.get(
+        user = CustomUser.objects.get(
             id=self.request.user.id
         )
         
-        sentEmails = EmailTransfer.objects.filter(sender=User)
+        sentEmails = EmailTransfer.objects.filter(sender=user)
 
         page = self.paginate_queryset(sentEmails)
         
@@ -717,12 +609,12 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             return Response(CustomResponses.successResponse("Email has been moved back to inbox")
         )
 
-        # Getting the User object from the database.
-        User = CustomUser.objects.get(
+        # Getting the user object from the database.
+        user = CustomUser.objects.get(
             id=self.request.user.id
         )
         
-        trash = Trash.objects.filter(deleter=User)
+        trash = Trash.objects.filter(deleter=user)
 
         page = self.paginate_queryset(trash)
         
@@ -742,12 +634,12 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             self.create(request=request)
             return Response(CustomResponses.successResponse("Email has been moved back to inbox"))
 
-        # Getting the User object from the database.
-        User = CustomUser.objects.get(
+        # Getting the user object from the database.
+        user = CustomUser.objects.get(
             id=self.request.user.id
         )
         
-        spam = Spam.objects.filter(spammer=User)
+        spam = Spam.objects.filter(spammer=user)
 
         page = self.paginate_queryset(spam)
         
@@ -768,12 +660,12 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             self.create(request=request)
             return Response(CustomResponses.successResponse("Email has been moved back to inbox"))
 
-        # Getting the User object from the database.
-        User = CustomUser.objects.get(
+        # Getting the user object from the database.
+        user = CustomUser.objects.get(
             id=self.request.user.id
         )
         
-        junk = Junk.objects.filter(junker=User)
+        junk = Junk.objects.filter(junker=user)
 
         page = self.paginate_queryset(junk)
         
@@ -793,12 +685,12 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             self.create(request=request)
             return Response(CustomResponses.successResponse("Email has been moved back to inbox"))
 
-        # Getting the User object from the database.
-        User = CustomUser.objects.get(
+        # Getting the user object from the database.
+        user = CustomUser.objects.get(
             id=self.request.user.id
         )
         
-        favorites = Favorites.objects.filter(favoriter=User)
+        favorites = Favorites.objects.filter(favoriter=user)
 
         page = self.paginate_queryset(favorites)
         

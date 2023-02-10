@@ -15,6 +15,7 @@ This Django API allows you to manage your email with features such as authentica
 - JWT Authentication
 - Result Pagination
 - Versioning
+- Throttling (Rate Limiting)
 
 ## Prerequisites
 

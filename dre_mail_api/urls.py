@@ -10,6 +10,7 @@ router = DefaultRouter(trailing_slash=False)
 router.register('emails/', EmailViewSet, basename="email")
 router.register(r'drafts/?', DraftViewSet, basename="drafts")
 router.register(r'group/?', EmailGroupViewSet, basename="group")
+router.register(r'users/?', UserViewSet, basename="users")
 router.register(r'emailTransfers/?', EmailTransferViewSet, basename="emailTransfers")
 
 urlpatterns = [
@@ -18,9 +19,5 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('logout/', LogoutView.as_view(), name="logout"),
     path('register/', RegisterUserView.as_view(), name="register"),
-    re_path(r'^change_password/(?P<userID>\d+)?/?$', ChangePasswordView.as_view(), name='change_password'),
-    re_path(r'^update_profile/(?P<userID>\d+)?/?$', UpdateProfileView.as_view(), name='update_profile'),
-    re_path(r'^update_avi/(?P<userID>\d+)?/?$', UpdateAVIView.as_view(), name='update_avi'),
-    path('users/', UserView.as_view()),
-    re_path(r'^user/(?P<userID>\d+)?/?$', UserDetailView.as_view(), name="userDetail"),
+    re_path('change_password/', ChangePasswordView.as_view(), name='change_password'),
 ]

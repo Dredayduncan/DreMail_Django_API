@@ -319,7 +319,6 @@ class InboxSerializer(serializers.ModelSerializer):
 # This class is used to update the read status of an email
 class ReadStatusUpdateSerializers(serializers.ModelSerializer):
     id = serializers.IntegerField(required=True)
-    unread = serializers.BooleanField(required=True)
 
     class Meta:
         model = EmailTransfer
