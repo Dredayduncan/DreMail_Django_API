@@ -64,3 +64,7 @@ class Spam(models.Model):
 class Drafts(models.Model):
     drafter = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE)
     email = models.ForeignKey(to=Email, on_delete=models.CASCADE)
+
+class Deleted(models.Model):
+    deleter = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE)
+    emailTransfer = models.ForeignKey(to=EmailTransfer, on_delete=models.CASCADE)

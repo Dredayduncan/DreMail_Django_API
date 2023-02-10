@@ -49,6 +49,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'first_name', 'last_name', 'username', 'email', "avi"]
 
+
 # It's a serializer that validates the old password, the new password, and the confirmation of the new
 # password
 class ChangePasswordSerializer(serializers.ModelSerializer):
@@ -90,6 +91,9 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(required=True)
 
 
 """--------------- USER SERIALIZERS ---------------"""

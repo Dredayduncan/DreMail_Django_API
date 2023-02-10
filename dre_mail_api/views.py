@@ -25,101 +25,6 @@ class RegisterUserView(generics.CreateAPIView):
     
 
 
-# This view will allow authenticated users to update their profile.
-# class UpdateProfileView(generics.RetrieveUpdateAPIView):
-#     queryset = CustomUser.objects.all()
-#     permission_classes = [permissions.IsAuthenticated]
-#     serializer_class = UserSerializer
-
-    # def get_object(self, userID, requestID):
-    #     '''
-    #     Helper method to get the object with given userID
-    #     '''
-    #     try:
-
-    #         if not userID:
-    #             return CustomUser.objects.get(id=requestID)
-
-    #         return CustomUser.objects.get(id=userID)
-            
-    #     except CustomUser.DoesNotExist:
-    #         return None
-
-    # Retrieve a user's details
-    # def get(self, request, userID=None, *args, **kwargs):
-    #     '''
-    #     Retrieves the Todo with given userID
-    #     '''
-     
-    #     userInstance = self.get_object(userID, request.user.id)
-
-    #     if not userInstance:
-    #         return Response(
-    #             CustomResponses.errorResponse("User with specified ID does not exist."),
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-
-    #     serializer = UpdateUserSerializer(userInstance)
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
-
-    # # Update a user's details
-    # def update(self, request, userID=None, *args, **kwargs):
-    #     '''
-    #     Updates the todo item with given userID if exists
-    #     '''
-        
-
-    #     try:
-
-    #         # This is checking if the user is a superuser or if the user is trying to access their own
-    #         # data.
-        
-    #         if CustomUser.objects.get(id=request.user.id).is_superuser == False \
-    #             and userID is not None \
-    #             and str(request.user.id) != userID:
-    #             return Response(
-    #                 CustomResponses.errorResponse("You do not have access to perform this action"),
-    #                 status=status.HTTP_403_FORBIDDEN
-    #             )
-
-    #         # This is checking if the user is a superuser or if the user is trying to access their own
-    #         # data.
-    #         self.object = self.get_object(userID, request.user.id)
-
-    #         if not self.object:
-    #             return Response(
-    #                 CustomResponses.errorResponse("User with specified ID does not exist."),
-    #                 status=status.HTTP_400_BAD_REQUEST
-    #             )
-                
-    #         data = {
-    #             'first_name': request.data.get('first_name'),
-    #             'last_name': request.data.get('last_name'),
-    #             "email": request.data.get("email"),
-    #             "username": request.data.get("username"),
-    #             "avi": request.data.get("avi")
-    #         }
-
-    #         serializer = self.get_serializer(data=request.data)
-
-    #         if serializer.is_valid():
-                
-    #             serializer.update(instance=self.object, validated_data=data)
-    
-    #             return Response(
-    #                 CustomResponses.successResponse(serializer.data), 
-    #                 status=status.HTTP_200_OK
-    #             )
-
-    #         return Response(
-    #             CustomResponses.errorResponse(serializer.errors), 
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-
-    #     except Exception as e:
-    #         raise APIException(CustomResponses.errorResponse(e))
-
-
 # It's a class that inherits from the UpdateAPIView class and it's used to update a user's password
 class ChangePasswordView(generics.UpdateAPIView):
     # add permission to check if user is authenticated
@@ -167,44 +72,44 @@ class ChangePasswordView(generics.UpdateAPIView):
                     CustomResponses.errorResponse("User with specified ID does not exist."),
                     status=status.HTTP_400_BAD_REQUEST
                 )
-                
-            data = {
-                'old_password': request.data.get('old_password'),
-                'new_password': request.data.get('new_password'),
-                "confirm_password": request.data.get("confirm_password")
-            }
 
-            serializer = self.get_serializer(data=data)
+            serializer = self.get_serializer(data=request.data)
 
             if serializer.is_valid():
                 
-                serializer.update(instance=self.object, validated_data=data)
+                serializer.update(instance=self.object, validated_data=request.data)
     
                 return Response(CustomResponses.successResponse("Password reset successful"), status=status.HTTP_200_OK)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            raise APIException(CustomResponses.errorResponse(e))
+            raise APIException(e)
 
 
 # It takes a refresh token, blacklists it, and returns a success message
-class LogoutView(APIView):
+class LogoutView(generics.UpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = LogoutSerializer 
 
     # logout a user and destroy their token
-    def post(self, request):
+    def update(self, request):
         try:
 
-            if request.data.get('refresh') is None:
-                return Response(CustomResponses.errorResponse("refresh cannot be empty"), status=status.HTTP_400_BAD_REQUEST)
+            serializer = self.get_serializer(data=request.data)
 
-            token = RefreshToken(request.data.get('refresh'))
-            token.blacklist()
-            successMessage = CustomResponses.successResponse("You have been logged out successfully.")
-            return Response(successMessage)
+            if (serializer.is_valid()):
+
+                token = RefreshToken(request.data.get('refresh'))
+                token.blacklist()
+
+                successMessage = CustomResponses.successResponse("You have been logged out successfully.")
+                return Response(successMessage)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
-            raise APIException(CustomResponses.errorResponse(e))
+            raise APIException(e)
             
 
 
@@ -221,7 +126,7 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['id']
-    search_fields = ['user__first_name', 'user__last_name', 'user__username', 'user__email']
+    search_fields = ['first_name', 'last_name', 'username', 'email']
     http_method_names = ['get', 'delete', 'patch']
 
     def destroy(self, request, *args, **kwargs):
@@ -278,7 +183,7 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
         ).distinct()
 
 
-    @action(detail=True, serializer_class=UserSerializer, search_fields=['members__user__username'])
+    @action(detail=True, serializer_class=UserSerializer, search_fields=['members__username'])
     def members(self, request, pk=None):
 
         groupMembers = self.get_object().members.all()
@@ -304,7 +209,7 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
             )
 
         except Exception as e:
-            raise APIException(CustomResponses.errorResponse(e))
+            raise APIException(e)
 
     @action(detail=True, methods=['post'], serializer_class=EmailGroupMemberSerializer)
     def remove_member(self, request, pk=None):
@@ -349,7 +254,7 @@ class EmailGroupViewSet(viewsets.ModelViewSet):
             )
 
         except Exception as e:
-            raise APIException(CustomResponses.errorResponse(e))
+            raise APIException(e)
 
 
 
@@ -377,27 +282,37 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
     search_fields = [
         'email__subject', 
         "email__message", 
-        "recipient__user__first_name",
-        "recipient__user__last_name",
-        "recipient__user__username",
-        "recipient__user__email",
-        "sender__user__first_name",
-        "sender__user__last_name",
-        "sender__user__username",
-        "sender__user__email",
+        "recipient__first_name",
+        "recipient__last_name",
+        "recipient__username",
+        "recipient__email",
+        "sender__first_name",
+        "sender__last_name",
+        "sender__username",
+        "sender__email",
     ] 
 
     http_method_names = ['get', 'post', 'delete']
 
     def get_queryset(self):
 
+        # Get the ids all permanently emails deleted by the current user
+        deletedEmailIds = list(
+            Deleted.objects.filter(
+                deleter=CustomUser.objects.get(id=self.request.user.id)
+            ).values_list("emailTransfer__id", flat=True)
+        )
+
+        # get all emails that have not been permanently deleted
+        queryset = EmailTransfer.objects.exclude(
+            id__in=deletedEmailIds
+        ).all()
+
 
         unread = self.request.query_params.get("unread", None)
 
         if unread is None:
-            return super().get_queryset()
-
-        queryset = EmailTransfer.objects.all()
+            return queryset
 
         return queryset.filter(
             unread=unread
@@ -411,35 +326,44 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         :return: A response object
         """
 
-        # Checking if the sender of the email is the same as the user who is trying to delete the
-        # email. If it is, it will return an error message.
         try:
-            if self.get_object().sender == CustomUser.objects.get(id=self.request.user.id):
-                return Response(CustomResponses.errorResponse("You are unable to delete an email you sent"), status=status.HTTP_400_BAD_REQUEST)
+
+            currentUser = CustomUser.objects.get(id=self.request.user.id)
+            currentEmail = self.get_object()
+
+
+            # check if the user is the recipient of the email or is in the group that received the email
+            if currentEmail.recipient != currentUser or currentEmail.group != None and currentEmail.group.members != currentUser:
+                raise APIException("You do not have access to perform this action")
+                
 
             # Check if the email is in trash
-            if Trash.objects.filter(
-                    emailTransfer=self.get_object(), 
-                    deleter=CustomUser.objects.get(id=self.request.user.id)
-                ).exists():
+            if Trash.objects.filter(emailTransfer=currentEmail, deleter=currentUser).exists():
+
+                # delete the email from Trash
+                Trash.objects.get(deleter=currentUser, emailTransfer=currentEmail).delete()
 
                 # permanently delete the email
-                self.get_object().email.delete()
+                deletedEmail = Deleted(deleter= currentUser, emailTransfer = currentEmail)
+                deletedEmail.save()
 
-                return Response(CustomResponses.successResponse("Email has been permanently deleted"))
+                return Response(
+                    CustomResponses.successResponse("Email has been permanently deleted"),
+                    status=status.HTTP_200_OK
+                )
 
 
             # Move email to deleted Emails (trash)
-            deleteEmail = Trash(
-                deleter = CustomUser.objects.get(id=self.request.user.id),
-                emailTransfer = self.get_object()
+            trash = Trash(
+                deleter = currentUser,
+                emailTransfer = currentEmail
             )
 
-            deleteEmail.save();
+            trash.save()
             return Response(CustomResponses.successResponse("Successfully moved email to Trash"))
 
         except Exception as e:
-            return Response(CustomResponses.errorResponse(e))
+            raise APIException(e)
 
 
     @action(detail=False, serializer_class=InboxSerializer, methods=['get', 'post'])
@@ -457,7 +381,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
                 )
 
                 # Getting the User object from the database.
-                User = CustomUser.objects.get(
+                user = CustomUser.objects.get(
                     id=self.request.user.id
                 )
 
@@ -466,7 +390,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
                     case "favorites":
                         favorites = Favorites(
-                            favoriter = User,
+                            favoriter = user,
                             emailTransfer = emailTransfer
                         )
 
@@ -478,7 +402,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
                     case "junk":
                         junk = Junk(
-                            junker = User,
+                            junker = user,
                             emailTransfer = emailTransfer
                         )
 
@@ -490,7 +414,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
                     case "spam":
                         spam = Spam(
-                            spammer = User,
+                            spammer = user,
                             emailTransfer = emailTransfer
                         )
 
@@ -501,7 +425,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
                         )
 
             except Exception as e:
-                raise APIException(CustomResponses.errorResponse(e))
+                raise APIException(e)
 
         
         # Getting the query parameter "unread" from the request.
@@ -528,8 +452,8 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         ).values_list("emailTransfer__id", flat=True))
 
 
-        # Get inbox
-        inbox = EmailTransfer.objects.exclude(
+        # Get inbox (emails received by the user or by groups that the user is in)
+        inbox = self.get_queryset().exclude(
             id__in=trashedEmailIDs + spamEmailIDs + junkEmailIDs,
         ).filter(
             Q(group__isnull=True) | Q(group__members=user),
@@ -559,10 +483,8 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
             serializer = self.get_serializer(data=request.data)
             self.object = EmailTransfer.objects.get(id=request.data.get("id"))
-            
 
             if serializer.is_valid():
-                
                 
                 serializer.update(instance=self.object, validated_data=request.data)
     
@@ -573,10 +495,10 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_200_OK
                 )
 
-            return Response(CustomResponses.errorResponse(serializer.errors), status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            raise APIException(CustomResponses.errorResponse(e))
+            raise APIException(e)
         
 
     
@@ -588,7 +510,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             id=self.request.user.id
         )
         
-        sentEmails = EmailTransfer.objects.filter(sender=user)
+        sentEmails = self.get_queryset().filter(sender=user)
 
         page = self.paginate_queryset(sentEmails)
         
