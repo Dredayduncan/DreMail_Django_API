@@ -168,7 +168,6 @@ class TestEmailTransferViewSet(TestCase):
         }
 
         response = self.client.post(f'/v1/api/emailTransfers/spam', data, format='json')
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
     def remove_from_favorites(self):
@@ -178,7 +177,6 @@ class TestEmailTransferViewSet(TestCase):
         }
 
         response = self.client.post(f'/v1/api/emailTransfers/favorites', data, format='json')
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def remove_from_junk(self):
@@ -188,6 +186,15 @@ class TestEmailTransferViewSet(TestCase):
         }
 
         response = self.client.post(f'/v1/api/emailTransfers/junk', data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_read_status(self):
+        data = {
+            # data for the object
+            "id": self.email_id,
+        }
+
+        response = self.client.post(f'/v1/api/emailTransfers/update_read_status', data, format='json')
         print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

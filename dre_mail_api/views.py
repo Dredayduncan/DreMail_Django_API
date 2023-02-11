@@ -478,7 +478,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(inbox, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
     @action(detail=False, serializer_class=ReadStatusUpdateSerializers, methods=['post'])
@@ -495,7 +495,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
     
                 return Response(
                     CustomResponses.successResponse(
-                        "Successfully updated unread status"
+                        serializer.data
                     ), 
                     status=status.HTTP_200_OK
                 )
@@ -523,7 +523,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(sentEmails, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
     @action(detail=False, serializer_class=EmailActionSerializer, methods=['get', 'post'])

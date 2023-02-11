@@ -39,11 +39,11 @@ class Email(models.Model):
 class EmailTransfer(models.Model):
     email = models.ForeignKey(to=Email, on_delete=models.CASCADE)
     sender = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE, related_name="sender")
-    recipient = models.ForeignKey(null=True, to=CustomUser, on_delete=models.CASCADE, related_name="recipient")
-    group = models.ForeignKey(null=True, to=EmailGroup, on_delete=models.CASCADE)
+    recipient = models.ForeignKey(null=True, blank=True, to=CustomUser, on_delete=models.CASCADE, related_name="recipient")
+    group = models.ForeignKey(null=True, blank=True, to=EmailGroup, on_delete=models.CASCADE)
     dateSent = models.DateTimeField(default=now, null=False, blank=False)
-    unread = models.BooleanField(default=True)
-    
+    hasRead = models.ManyToManyField(to=CustomUser)
+
 
 class Favorites(models.Model):
     favoriter = models.ForeignKey(to=CustomUser, on_delete=models.CASCADE)

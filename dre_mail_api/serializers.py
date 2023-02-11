@@ -215,7 +215,6 @@ class EmailSerializer(serializers.ModelSerializer):
         model = Email
         fields = "__all__"
 
-
 class EmailTransferSerializer(serializers.ModelSerializer):
     email = EmailSerializer()
     recipient = UserSerializer(read_only=True)
@@ -223,18 +222,27 @@ class EmailTransferSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
     recipient_id = serializers.IntegerField(write_only=True, required=False)
     group_id = serializers.IntegerField(write_only=True, required=False)
+    has_read = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailTransfer
-        fields = ["id", "sender", "recipient", "group", 'email', "unread", "dateSent", "recipient_id", "group_id"]
+        fields = ["id", "sender", "recipient", "group", 'email', "has_read", "dateSent", "recipient_id", "group_id"]
         extra_kwargs = {
-            "unread": {
-                "read_only": True
-            },
             "dateSent": {
                 "read_only": True
             }
         }
+
+    def get_has_read(self, obj):
+        """
+        We are checking if the user has read this email
+        If the recipient_id is in the hasRead field, return True, otherwise return False
+        
+        :param obj: The object that is being serialized
+        :return: The has_read field is being returned.
+        """
+        recipient_id = self.context['request'].user.id
+        return obj.hasRead.filter(id=recipient_id).exists()
 
     def validate_recipient_id(self, value):
         """
@@ -329,12 +337,41 @@ class InboxSerializer(serializers.ModelSerializer):
 
 # This class is used to update the read status of an email
 class ReadStatusUpdateSerializers(serializers.ModelSerializer):
-    id = serializers.IntegerField(required=True)
+    id = serializers.IntegerField(required=True, write_only=True)
+    has_read = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = EmailTransfer
-        fields = ["id", "unread"]
+        fields = ["id", "has_read"]
 
+    def get_has_read(self, obj):
+        """
+        We are checking if the user has read this email
+        If the recipient_id is in the hasRead field, return True, otherwise return False
+        
+        :param obj: The object that is being serialized
+        :return: The has_read field is being returned.
+        """
+        try:
+
+            recipient_id = self.context['request'].user.id
+
+            return  EmailTransfer.objects.get(id=obj.get("id")).hasRead.filter(id=recipient_id).exists()
+        except Exception as e:
+            raise serializers.ValidationError(e)
+
+    def update(self, instance, validated_data):
+
+        try:
+
+            if instance.hasRead.filter(id=validated_data.get("id")).exists():
+                instance.hasRead.remove(validated_data.get("id"))
+            else:
+                instance.hasRead.add(validated_data.get("id"))
+            
+            return instance
+        except Exception as e:
+            raise serializers.ValidationError(CustomResponses.errorResponse(e))
 
 class EmailActionSerializer(serializers.ModelSerializer):
     emailTransfer = InboxSerializer(read_only=True)
