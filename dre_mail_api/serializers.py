@@ -17,6 +17,15 @@ class RegisterUserSerializer(serializers.ModelSerializer):
             'password': {"write_only": True}
         }
 
+    def validate_email(self, value):
+
+        pattern = re.compile("^\w+(@dremail.com)$")
+        if not pattern.match(value):
+            raise serializers.ValidationError("Invalid email format. Your email should end with @dremail.com")
+
+        return value
+
+
     def create(self, validated_data):
         """Create and return a new user."""
 

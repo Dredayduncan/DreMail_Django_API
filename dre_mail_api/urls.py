@@ -7,9 +7,9 @@ from rest_framework_simplejwt.views import (
 )
 
 router = DefaultRouter(trailing_slash=False)
-router.register('emails/', EmailViewSet, basename="email")
+router.register(r'emails/?', EmailViewSet, basename="email")
 router.register(r'drafts/?', DraftViewSet, basename="drafts")
-router.register(r'group/?', EmailGroupViewSet, basename="group")
+router.register(r'groups/?', EmailGroupViewSet, basename="group")
 router.register(r'users/?', UserViewSet, basename="users")
 router.register(r'emailTransfers/?', EmailTransferViewSet, basename="emailTransfers")
 
