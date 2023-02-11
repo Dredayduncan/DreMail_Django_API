@@ -87,7 +87,6 @@ class TestEmailTransferViewSet(TestCase):
 
     def test_delete_email(self):
         response = self.client.delete(f'/v1/api/emailTransfers/{self.email_id}')
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
