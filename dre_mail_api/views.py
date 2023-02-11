@@ -330,10 +330,11 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
             currentUser = CustomUser.objects.get(id=self.request.user.id)
             currentEmail = self.get_object()
+            print(self.get_object().id)
 
 
             # check if the user is the recipient of the email or is in the group that received the email
-            if currentEmail.recipient != currentUser or currentEmail.group != None and currentEmail.group.members != currentUser:
+            if currentEmail.recipient != currentUser and currentEmail.group != None and currentEmail.group.members != currentUser:
                 raise APIException("You do not have access to perform this action")
                 
 
@@ -360,7 +361,11 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             )
 
             trash.save()
-            return Response(CustomResponses.successResponse("Successfully moved email to Trash"))
+
+            return Response(
+                CustomResponses.successResponse("Successfully moved email to Trash"),
+                status=status.HTTP_200_OK
+            )
 
         except Exception as e:
             raise APIException(e)
@@ -498,8 +503,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            raise APIException(e)
-        
+            raise APIException(e)  
 
     
     @action(detail=False, serializer_class=SentEmailSerializer)
