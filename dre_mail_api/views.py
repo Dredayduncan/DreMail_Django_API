@@ -309,14 +309,23 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
         ).all()
 
 
-        unread = self.request.query_params.get("unread", None)
+        read = self.request.query_params.get("hasRead")
 
-        if unread is None:
+        if read is None:
             return queryset
 
-        return queryset.filter(
-            unread=unread
-        )
+        elif read == "true":
+            return queryset.filter(
+                hasRead__id=self.request.user.id
+            )
+        else:
+            return queryset.exclude(
+                hasRead__id=self.request.user.id
+            )
+
+
+        
+        
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -434,7 +443,7 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
         
         # Getting the query parameter "unread" from the request.
-        unread = self.request.query_params.get("unread", None)
+        read = self.request.query_params.get("read")
 
         # Getting the user object from the database.
         user = CustomUser.objects.get(
@@ -467,9 +476,19 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
         
         # Filtering the emails based on the unread status.
+        read = self.request.query_params.get("hasRead")
 
-        if unread is not None:
-            inbox = inbox.filter(unread=unread)
+        if read is not None:
+
+            if read == "true":
+                inbox = inbox.filter(
+                    hasRead__id=self.request.user.id
+                )
+            else:
+                inbox = inbox.exclude(
+                    hasRead__id=self.request.user.id
+                )
+        
 
         page = self.paginate_queryset(inbox)
         

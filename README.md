@@ -23,6 +23,41 @@ This Django API allows you to manage your email with features such as authentica
 - Django 3.x
 - Django Rest Framework
 
+## Features
+- Register a user
+- Login
+- Logout
+- Update Password
+- Update User AVI (Profile Picture)
+- Search for Users
+- Retrieve User Details
+- Create Email Group
+- Update Email Group Information
+- Delete Email Group
+- Retrieve Email Details
+- Add Users to Email Group
+- Remove Users from Email Group
+- Retrieve Members of an Email Group
+- Search for Email Groups
+- Create Drafts
+- Delete Drafts
+- Update a Draft
+- Send Emails to Users
+- Retrieve Email Details
+- Send Emails to Email Groups
+- Set Email Status to Read or Unread
+- Filter Emails by Read or Unread
+- Retrieve Inbox
+- Retrieve Sent Emails
+- Retrieve Spam Emails
+- Retrieve Junk Emails
+- Retrieve Favorite Emails
+- Retrieve Trash Emails
+- Favorite Emails
+- Move Emails to Spam
+- Move Emails to Junk
+- Move Emails to Trash
+- Permanently Delete Emails
 
 ## Installation
 

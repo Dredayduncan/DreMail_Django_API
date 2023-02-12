@@ -321,18 +321,27 @@ class InboxSerializer(serializers.ModelSerializer):
     group = EmailGroupSerializer(read_only=True)
     email_id = serializers.IntegerField(required=True, write_only=True)
     destination = serializers.ChoiceField(required=True, write_only=True, choices=['favorites', 'junk', 'spam'])
+    has_read = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailTransfer
-        fields = ["id", "sender", 'group', 'email', "unread", "dateSent", "email_id", "destination"]
+        fields = ["id", "sender", 'group', 'email', "has_read", "dateSent", "email_id", "destination"]
         extra_kwargs = {
-            "unread": {
-                "read_only": True
-            },
             "dateSent": {
                 "read_only": True
             },
         }
+
+    def get_has_read(self, obj):
+        """
+        We are checking if the user has read this email
+        If the recipient_id is in the hasRead field, return True, otherwise return False
+        
+        :param obj: The object that is being serialized
+        :return: The has_read field is being returned.
+        """
+        recipient_id = self.context['request'].user.id
+        return obj.hasRead.filter(id=recipient_id).exists()
 
 
 # This class is used to update the read status of an email
@@ -369,9 +378,6 @@ class EmailActionSerializer(serializers.ModelSerializer):
         model = Trash
         fields = ['email_id', 'emailTransfer']
         extra_kwargs = {
-            "unread": {
-                "read_only": True
-            },
             "dateSent": {
                 "read_only": True
             }
