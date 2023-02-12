@@ -360,18 +360,6 @@ class ReadStatusUpdateSerializers(serializers.ModelSerializer):
         except Exception as e:
             raise serializers.ValidationError(e)
 
-    def update(self, instance, validated_data):
-
-        try:
-
-            if instance.hasRead.filter(id=validated_data.get("id")).exists():
-                instance.hasRead.remove(validated_data.get("id"))
-            else:
-                instance.hasRead.add(validated_data.get("id"))
-            
-            return instance
-        except Exception as e:
-            raise serializers.ValidationError(CustomResponses.errorResponse(e))
 
 class EmailActionSerializer(serializers.ModelSerializer):
     emailTransfer = InboxSerializer(read_only=True)

@@ -491,7 +491,12 @@ class EmailTransferViewSet(viewsets.ModelViewSet):
 
             if serializer.is_valid():
                 
-                serializer.update(instance=self.object, validated_data=request.data)
+                currentUserID = self.request.user.id
+
+                if self.object.hasRead.filter(id=currentUserID).exists():
+                    self.object.hasRead.remove(currentUserID)
+                else:
+                    self.object.hasRead.add(currentUserID)
     
                 return Response(
                     CustomResponses.successResponse(

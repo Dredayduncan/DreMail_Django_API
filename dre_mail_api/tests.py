@@ -189,6 +189,7 @@ class TestEmailTransferViewSet(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_update_read_status(self):
+        print(self.user.id)
         data = {
             # data for the object
             "id": self.email_id,
